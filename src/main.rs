@@ -1,59 +1,41 @@
 use bevy::prelude::*;
+use bevy::render::texture::ImageSettings;
 use bevy_inspector_egui::{WorldInspectorPlugin, Inspectable};
+use crate::plugins::hello_plugin::HelloPlugin;
 
 mod components;
 mod entities;
 mod systems;
+mod plugins;
+mod resources;
 
-#[derive(Component)]
-struct Person;
+fn setup(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+) {
+    // texture atlas for the player
+    let texture_handle = asset_server.load("AnimationSheet_Character.png");
+    let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(32.0, 32.0), 9, 8);
+    let texture_atlas_handle = texture_atlases.add(texture_atlas);
 
-#[derive(Component, Inspectable)]
-struct Name(String);
-
-fn add_people(mut commands: Commands) {
-    commands
-        .spawn()
-        .insert(Person)
-        .insert(Name("Bob".to_string()));
-    commands
-        .spawn()
-        .insert(Person)
-        .insert(Name("James".to_string()));
-    commands
-        .spawn()
-        .insert(Person)
-        .insert(Name("Natalie".to_string()));
-}
-
-struct GreetTimer(Timer);
-
-fn greet_people(
-    time: Res<Time>, mut timer: ResMut<GreetTimer>, query: Query<&Name, With<Person>>) {
-    // update our timer with the time elapsed since the last update
-    // if that caused the timer to finish, we say hello to everyone
-    if timer.0.tick(time.delta()).just_finished() {
-        for name in query.iter() {
-            println!("hello {}!", name.0);
-        }
-    }
-}
-
-pub struct HelloPlugin;
-
-impl Plugin for HelloPlugin {
-    fn build(&self, app: &mut App) {
-        // the reason we call from_seconds with the true flag is to make the timer repeat itself
-        app.insert_resource(GreetTimer(Timer::from_seconds(2.0, true)))
-            .add_startup_system(add_people)
-            .add_system(greet_people);
-    }
+    commands.spawn_bundle(Camera2dBundle::default());
+    commands.spawn_bundle(SpriteSheetBundle {
+        sprite: Default::default(),
+        texture_atlas: texture_atlas_handle,
+        transform: Transform::from_scale(Vec3::splat(2.0)),
+        global_transform: Default::default(),
+        visibility: Default::default(),
+        computed_visibility: Default::default()
+    });
 }
 
 fn main() {
     App::new()
+        .insert_resource(ImageSettings::default_nearest())
         .add_plugins(DefaultPlugins)
         .add_plugin(WorldInspectorPlugin::new())
-        .add_plugin(HelloPlugin)
+        .add_startup_system(setup)
+        //.add_plugin(HelloPlugin)
         .run();
 }
