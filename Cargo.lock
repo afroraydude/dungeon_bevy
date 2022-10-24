@@ -312,6 +312,8 @@ dependencies = [
  "anyhow",
  "bevy",
  "bevy_asset_loader_derive",
+ "bevy_common_assets",
+ "serde",
 ]
 
 [[package]]
@@ -339,6 +341,18 @@ dependencies = [
  "bevy_utils",
  "parking_lot 0.12.1",
  "rodio",
+]
+
+[[package]]
+name = "bevy_common_assets"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3f7be9ee39085d8319d5cd853447b0b5c4f8b4bfd647aec91e2bd996e9db67ef"
+dependencies = [
+ "anyhow",
+ "bevy",
+ "ron",
+ "serde",
 ]
 
 [[package]]
