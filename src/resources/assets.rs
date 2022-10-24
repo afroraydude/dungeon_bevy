@@ -6,4 +6,7 @@ pub struct MyAssets {
     #[asset(texture_atlas(tile_size_x = 32., tile_size_y = 32., columns = 9, rows = 8))]
     #[asset(path = "AnimationSheet_Character.png")]
     pub player: Handle<TextureAtlas>,
+
+    #[asset(path = "unknown.png")]
+    pub unknown: Handle<Image>
 }

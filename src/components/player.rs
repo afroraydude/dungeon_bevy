@@ -24,5 +24,7 @@ pub struct PlayerBundle {
     pub name: crate::components::person::Name,
     pub animation: PlayerAnimationState,
     #[bundle]
-    pub sprite: SpriteSheetBundle
+    pub sprite: SpriteSheetBundle,
+    pub collider: crate::components::BoxCollider,
+    pub collision: crate::components::Collision,
 }

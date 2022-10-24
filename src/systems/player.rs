@@ -24,7 +24,16 @@ pub fn create_player (
             visibility: Default::default(),
             computed_visibility: Default::default(),
             ..Default::default()
-        }
+        },
+        collision: crate::components::Collision {
+            collisions: Vec::new(),
+        },
+        collider: crate::components::BoxCollider {
+            width: 20.0,
+            height: 20.0,
+            layer: 0,
+            offset: Vec2::new(0.0, 0.0),
+        },
     };
     player.sprite.sprite.index = 0;
     commands.spawn_bundle(player).insert(AnimationTimer(Timer::from_seconds(0.2, true)));
