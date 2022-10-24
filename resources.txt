@@ -1,0 +1,6 @@
+https://bevyengine.org/learn/book/introduction/ - official thingy
+https://bevyengine.org/learn/book/next-steps/ - official next steps
+https://bevy-cheatbook.github.io/ - cheatbook (unofficial)
+https://bevyengine.org/assets/#apps - officially known games
+https://docs.rs/bevy/latest/bevy/- official API docs
+https://bevyengine.org/assets/ - officially known stuff
