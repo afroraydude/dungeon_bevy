@@ -19,7 +19,7 @@ pub fn create_player (
         animation: PlayerAnimationState(PlayerAnimationStates::Idle),
         sprite: SpriteSheetBundle {
             texture_atlas: texture_atlas_handle,
-            transform: Transform::from_scale(Vec3::splat(2.0)),
+            transform: Transform::from_scale(Vec3::splat(1.0)),
             global_transform: Default::default(),
             visibility: Default::default(),
             computed_visibility: Default::default(),
@@ -33,7 +33,7 @@ pub fn create_player (
             height: 20.0,
             layer: 0,
             offset: Vec2::new(0.0, 0.0),
-            scale: Vec2::new(2.0, 2.0),
+            scale: Vec2::new(1.0, 1.0),
             collider_type: crate::components::ColliderType::Solid,
         },
     };

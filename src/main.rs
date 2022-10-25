@@ -4,6 +4,7 @@ use bevy::prelude::*;
 use bevy::render::texture::ImageSettings;
 use bevy::sprite::TextureAtlasBuilderResult;
 use bevy_asset_loader::prelude::*;
+use bevy_ecs_tilemap::TilemapPlugin;
 use bevy_inspector_egui::{Inspectable, WorldInspectorPlugin};
 
 use plugins::game_state_plugin::GameStatePlugin;
@@ -59,6 +60,7 @@ fn main() {
             level: bevy::log::Level::DEBUG,
         })
         .add_plugins(DefaultPlugins)
+        .add_plugin(TilemapPlugin)
         .add_loading_state(
             LoadingState::new(MyStates::AssetLoading)
                 .continue_to_state(MyStates::WorldGeneration)
@@ -72,6 +74,7 @@ fn main() {
         .add_system_set(
             SystemSet::on_enter(MyStates::WorldGeneration)
                 .with_system(generate_world)
+                .with_system(draw_begining)
         )
         //.add_plugin(FrameTimeDiagnosticsPlugin::default())
         //.add_plugin(HelloPlugin)
