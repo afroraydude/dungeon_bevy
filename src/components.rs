@@ -103,3 +103,6 @@ pub struct WorldTile {
     #[bundle]
     pub sprite: SpriteSheetBundle
 }
+
+#[derive(Component)]
+pub struct LoadingText;

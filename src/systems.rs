@@ -1,10 +1,15 @@
 use std::borrow::{Borrow, BorrowMut};
 use bevy::prelude::*;
-use crate::{BoxCollider, Collision, MyAssets, MyStates};
+use crate::{BoxCollider, Collision, LoadingText, MyAssets, MyStates};
 use crate::components::WorldTile;
-use noise::{core::perlin::{perlin_2d, perlin_3d, perlin_4d}, Fbm, Perlin, permutationtable::PermutationTable, utils::*};
+use noise::{core::perlin::{perlin_2d, perlin_3d, perlin_4d}, Fbm, Perlin, permutationtable::PermutationTable};
 use bevy_ecs_tilemap::prelude::*;
 use bevy::{math::Vec3Swizzles, prelude::*, render::texture::ImageSettings, utils::HashSet};
+use bevy::app::AppLabel;
+use bevy::render::camera::{CameraProjection, CameraRenderGraph, DepthCalculation};
+use bevy::render::primitives::Frustum;
+use bevy::render::view::VisibleEntities;
+use noise::utils::{NoiseMapBuilder, PlaneMapBuilder};
 use crate::resources::{CHUNK_SIZE, TILE_SIZE, WORLD_SIZE, WorldMap};
 
 pub mod people;
@@ -15,15 +20,40 @@ pub fn draw_begining(
     mut commands: Commands,
     assets: Res<MyAssets>,
     texture_atlases: Res<Assets<TextureAtlas>>,
+    mut app_state: ResMut<State<MyStates>>,
 ) {
     //commands.spawn_bundle(Camera2dBundle::default()).insert(crate::components::camera::CameraTimer(Timer::from_seconds(0.01, true)));
-    let center_of_world = get_center_of_world();
-    let transform = Transform::from_xyz(center_of_world.x, center_of_world.y, 128.0);
-    commands.spawn_bundle(Camera2dBundle {
-        transform,
-        ..Default::default()
-    });
+
+    commands.spawn_bundle(Camera2dBundle::default());
     info!("Assets loaded, camera setup");
+
+    commands
+        .spawn_bundle(
+            // Create a TextBundle that has a Text with a single section.
+            TextBundle::from_section(
+                // Accepts a `String` or any type that converts into a `String`, such as `&str`
+                "Loading...".to_string(),
+                TextStyle {
+                    font: assets.font.clone(),
+                    font_size: 100.0,
+                    color: Color::WHITE,
+                },
+            ) // Set the alignment of the Text
+                .with_text_alignment(TextAlignment::TOP_CENTER)
+                // Set the style of the TextBundle itself.
+                .with_style(Style {
+                    align_self: AlignSelf::Center,
+                    position_type: PositionType::Absolute,
+                    position: UiRect {
+                        top: Val::Px(5.0),
+                        left: Val::Px(15.0),
+                        ..default()
+                    },
+                    ..default()
+                }),
+        )
+        .insert(LoadingText);
+    app_state.overwrite_set(MyStates::WorldGeneration).unwrap_or_else(|e| error!("Error: {}", e));
 }
 
 /*
@@ -183,9 +213,10 @@ pub fn generate_world(
                     world.map[x as usize][y as usize] = 0;
                 }
             }
-            debug!("{} {} => {}", x, y, value);
         }
     }
+
+    debug!("World generated");
 
     app_state.overwrite_set(MyStates::Game).unwrap_or_else(|e| error!("Failed to overwrite state: {:?}", e));
 }
@@ -216,6 +247,10 @@ pub fn spawn_chunks_around_camera(
         }
     }
 }
+
+
+
+
 
 pub fn despawn_outofrange_chunks(
     mut commands: Commands,

@@ -10,7 +10,7 @@ use bevy_inspector_egui::{Inspectable, WorldInspectorPlugin};
 use plugins::game_state_plugin::GameStatePlugin;
 use resources::MyStates;
 
-use crate::components::{BoxCollider, Collision, Unknown};
+use crate::components::{BoxCollider, Collision, LoadingText, Unknown};
 use crate::components::camera::follow_player;
 use crate::plugins::hello_plugin::HelloPlugin;
 use crate::plugins::inspections::InspectionPlugin;
@@ -66,7 +66,7 @@ fn main() {
         .add_plugin(TilemapPlugin)
         .add_loading_state(
             LoadingState::new(MyStates::AssetLoading)
-                .continue_to_state(MyStates::WorldGeneration)
+                .continue_to_state(MyStates::MainMenud)
                 .with_collection::<MyAssets>(),
         )
         .add_state(MyStates::AssetLoading)
@@ -75,9 +75,12 @@ fn main() {
         .add_plugin(GameStatePlugin)
         .add_plugin(LogDiagnosticsPlugin::default())
         .add_system_set(
-            SystemSet::on_enter(MyStates::WorldGeneration)
-                .with_system(generate_world)
+            SystemSet::on_enter(MyStates::MainMenu)
+
                 .with_system(draw_begining)
+        ).add_system_set(
+        SystemSet::on_enter(MyStates::WorldGeneration)
+            .with_system(generate_world)
         )
         //.add_plugin(FrameTimeDiagnosticsPlugin::default())
         //.add_plugin(HelloPlugin)

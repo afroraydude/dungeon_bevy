@@ -25,8 +25,8 @@ pub const RENDER_CHUNK_SIZE: UVec2 = UVec2 {
 };
 
 pub const WORLD_SIZE: UVec2 = UVec2 {
-    x: 256,
-    y: 256,
+    x: 1024,
+    y: 1024,
 };
 
 pub struct WorldMap {

@@ -12,4 +12,7 @@ pub struct MyAssets {
 
     #[asset(path = "TX Tileset Grass.png")]
     pub grasses_raw: Handle<Image>,
+
+    #[asset(path = "font.ttf")]
+    pub font: Handle<Font>,
 }
