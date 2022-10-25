@@ -2,6 +2,7 @@ use bevy::prelude::*;
 
 use crate::{systems::{draw_begining, player::{create_player, move_player, animate_player}}, spawn_unknown, resources::MyStates, components::camera::follow_player};
 use crate::components::camera::CameraTimer;
+use crate::systems::{despawn_outofrange_chunks, spawn_chunks_around_camera};
 
 pub struct GameStatePlugin;
 
@@ -19,7 +20,9 @@ impl Plugin for GameStatePlugin {
                 .with_system(move_player)
                 .with_system(animate_player)
                 .with_system(follow_player)
-                .with_system(crate::systems::box_colliders),
+                .with_system(crate::systems::box_colliders)
+                .with_system(spawn_chunks_around_camera)
+                .with_system(despawn_outofrange_chunks)
         );
     }
 }

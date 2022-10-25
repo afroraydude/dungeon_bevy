@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use crate::components::{AnimationTimer, Health};
 use crate::components::player::{PlayerAnimationState, PlayerAnimationStates, PlayerBundle, PlayerXp};
 use crate::{BoxCollider, Collision, MyAssets};
+use crate::systems::get_center_of_world;
 
 pub fn create_player (
     mut commands: Commands,
@@ -9,6 +10,12 @@ pub fn create_player (
     texture_atlases: Res<Assets<TextureAtlas>>,
 ) {
     let texture_atlas_handle = texture_atlases.get_handle(&assets.player);
+
+    // center of map
+    let center_of_world = get_center_of_world();
+
+    let transform = Transform::from_translation(Vec3::new(center_of_world.x, center_of_world.y, 1.0));
+
     let mut player = PlayerBundle {
         health: Health {
             hp: 100.0,
@@ -19,7 +26,7 @@ pub fn create_player (
         animation: PlayerAnimationState(PlayerAnimationStates::Idle),
         sprite: SpriteSheetBundle {
             texture_atlas: texture_atlas_handle,
-            transform: Transform::from_scale(Vec3::splat(1.0)),
+            transform: transform.clone(),
             global_transform: Default::default(),
             visibility: Default::default(),
             computed_visibility: Default::default(),

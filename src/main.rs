@@ -15,7 +15,8 @@ use crate::components::camera::follow_player;
 use crate::plugins::hello_plugin::HelloPlugin;
 use crate::plugins::inspections::InspectionPlugin;
 use crate::resources::assets::MyAssets;
-use crate::systems::{draw_begining, generate_world};
+use crate::resources::WorldMap;
+use crate::systems::{ChunkManager, draw_begining, generate_world};
 use crate::systems::player::{animate_player, create_player, move_player};
 
 mod components;
@@ -40,7 +41,7 @@ fn spawn_unknown(mut commands: Commands, assets: Res<MyAssets>) {
         },
         sprite: SpriteBundle {
             sprite: Default::default(),
-            transform: Transform::from_xyz(64.0, 64.0, 0.0),
+            transform: Transform::from_xyz(64.0, 64.0, 1.0),
             global_transform: Default::default(),
             texture: assets.unknown.clone(),
             visibility: Default::default(),
@@ -59,6 +60,8 @@ fn main() {
             filter: "info,wgpu_core=warn,wgpu_hal=warn,bevygame=debug".into(),
             level: bevy::log::Level::DEBUG,
         })
+        .insert_resource(resources::WorldMap::default())
+        .insert_resource(ChunkManager::default())
         .add_plugins(DefaultPlugins)
         .add_plugin(TilemapPlugin)
         .add_loading_state(

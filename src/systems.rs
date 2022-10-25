@@ -1,11 +1,11 @@
-use std::borrow::BorrowMut;
+use std::borrow::{Borrow, BorrowMut};
 use bevy::prelude::*;
-use crate::{BoxCollider, MyAssets, MyStates};
+use crate::{BoxCollider, Collision, MyAssets, MyStates};
 use crate::components::WorldTile;
-use crate::functions::tile_to_world_pos;
 use noise::{core::perlin::{perlin_2d, perlin_3d, perlin_4d}, Fbm, Perlin, permutationtable::PermutationTable, utils::*};
 use bevy_ecs_tilemap::prelude::*;
 use bevy::{math::Vec3Swizzles, prelude::*, render::texture::ImageSettings, utils::HashSet};
+use crate::resources::{CHUNK_SIZE, TILE_SIZE, WORLD_SIZE, WorldMap};
 
 pub mod people;
 pub mod player;
@@ -17,7 +17,12 @@ pub fn draw_begining(
     texture_atlases: Res<Assets<TextureAtlas>>,
 ) {
     //commands.spawn_bundle(Camera2dBundle::default()).insert(crate::components::camera::CameraTimer(Timer::from_seconds(0.01, true)));
-    commands.spawn_bundle(Camera2dBundle::default());
+    let center_of_world = get_center_of_world();
+    let transform = Transform::from_xyz(center_of_world.x, center_of_world.y, 128.0);
+    commands.spawn_bundle(Camera2dBundle {
+        transform,
+        ..Default::default()
+    });
     info!("Assets loaded, camera setup");
 }
 
@@ -50,129 +55,154 @@ pub fn box_colliders(
     }
 }
 
-const TILE_SIZE: TilemapTileSize = TilemapTileSize { x: 32.0, y: 32.0 };
-// For this example, don't choose too large a chunk size.
-const CHUNK_SIZE: UVec2 = UVec2 { x: 4, y: 4 };
-// Render chunk sizes are set to 4 render chunks per user specified chunk.
-const RENDER_CHUNK_SIZE: UVec2 = UVec2 {
-    x: CHUNK_SIZE.x * 2,
-    y: CHUNK_SIZE.y * 2,
-};
-
 #[derive(Default, Debug)]
 pub struct ChunkManager {
     pub spawned_chunks: HashSet<IVec2>,
+}
+
+fn tile_to_world_pos(tile_pos: TilePos, chunk_pos: IVec2) -> Vec2 {
+    let mut x = (tile_pos.x as i32 + (chunk_pos.x * CHUNK_SIZE.x as i32)) as f32;
+    let mut y = (tile_pos.y as i32 + (chunk_pos.y * CHUNK_SIZE.y as i32)) as f32;
+
+    Vec2::new(x, y)
+}
+
+pub fn get_center_of_world() -> Vec2 {
+    let mut x = (((WORLD_SIZE.x as i32) * TILE_SIZE.x as i32) / 2) as f32;
+    let mut y = (((WORLD_SIZE.y as i32) * TILE_SIZE.y as i32) / 2) as f32;
+
+    Vec2::new(x, y)
+}
+
+fn spawn_chunk(commands: &mut Commands, assets: &Res<MyAssets>, chunk_pos: IVec2, world_map: &Res<WorldMap>) {
+
+    let tilemap_entity = commands.spawn().id();
+    let mut tile_storage = TileStorage::empty(CHUNK_SIZE.into());
+    // Spawn the elements of the tilemap.
+    for x in 0..CHUNK_SIZE.x {
+        for y in 0..CHUNK_SIZE.y {
+            let tile_pos = TilePos { x, y };
+
+            let tile_world_pos = tile_to_world_pos(tile_pos, chunk_pos);
+
+            // dont spawn out of bounds tiles
+            if tile_world_pos.x < 0.0 || tile_world_pos.y < 0.0 || tile_world_pos.x >= WORLD_SIZE.x as f32 || tile_world_pos.y >= WORLD_SIZE.y as f32 {
+                continue;
+            }
+
+            let tile_entity = commands
+                .spawn()
+                .insert_bundle(TileBundle {
+                    position: tile_pos,
+                    tilemap_id: TilemapId(tilemap_entity),
+                    texture: TileTexture(world_map.map[tile_world_pos.x as usize][tile_world_pos.y as usize]),
+                    ..Default::default()
+                })
+                .id();
+            commands.entity(tilemap_entity).add_child(tile_entity);
+            tile_storage.set(&tile_pos, tile_entity);
+        }
+    }
+
+    let transform = Transform::from_translation(Vec3::new(
+        chunk_pos.x as f32 * CHUNK_SIZE.x as f32 * TILE_SIZE.x,
+        chunk_pos.y as f32 * CHUNK_SIZE.y as f32 * TILE_SIZE.y,
+        0.0,
+    ));
+    let texture_handle: Handle<Image> = assets.grasses_raw.clone();
+    commands
+        .entity(tilemap_entity)
+        .insert_bundle(TilemapBundle {
+            grid_size: TILE_SIZE.into(),
+            size: CHUNK_SIZE.into(),
+            storage: tile_storage,
+            texture: TilemapTexture::Single(texture_handle),
+            tile_size: TILE_SIZE,
+            transform,
+            ..Default::default()
+        });
 }
 
 pub fn generate_world(
     mut commands: Commands,
     assets: Res<MyAssets>,
     texture_atlases: Res<Assets<TextureAtlas>>,
-    mut app_state: ResMut<State<MyStates>>
+    mut app_state: ResMut<State<MyStates>>,
+    mut world: ResMut<WorldMap>,
 ) {
     info!("Generating world");
 
     // create default camera
     //commands.spawn_bundle(Camera2dBundle::default());
 
-    let texture_handle: Handle<Image> = assets.grasses_raw.clone();
-    let tilemap_size = TilemapSize { x: 32, y: 32 };
-    let tilemap_entity = commands.spawn().id();
-    let mut tile_storage = TileStorage::empty(tilemap_size);
-
     let fbm = Fbm::<Perlin>::default();
 
     debug!("Fbm loaded");
 
     let mut map = PlaneMapBuilder::<_, 2>::new(fbm)
-        .set_size(tilemap_size.x as usize, tilemap_size.y as usize)
+        .set_size(WORLD_SIZE.x as usize, WORLD_SIZE.y as usize)
         .set_x_bounds(0.0, 1.0)
         .set_y_bounds(0.0, 1.0)
         .build();
 
     debug!("Perlin map built");
 
-    let mut world = vec![vec![0; tilemap_size.y as usize]; tilemap_size.x as usize];
-
-    for x in 0..tilemap_size.x {
-        for y in 0..tilemap_size.y {
+    for x in 0..WORLD_SIZE.x {
+        for y in 0..WORLD_SIZE.y {
             let value = map.get_value(x as usize, y as usize);
 
             match value {
                 0.0..=0.1 => {
-                    world[x as usize][y as usize] = 0;
+                    world.map[x as usize][y as usize] = 0;
                 },
                 0.1..=0.2 => {
-                    world[x as usize][y as usize] = 1;
+                    world.map[x as usize][y as usize] = 1;
                 },
                 0.2..=0.3 => {
-                    world[x as usize][y as usize] = 2;
+                    world.map[x as usize][y as usize] = 2;
                 },
                 0.3..=0.4 => {
-                    world[x as usize][y as usize] = 3;
+                    world.map[x as usize][y as usize] = 3;
                 },
                 0.4..=0.5 => {
-                    world[x as usize][y as usize] = 4;
+                    world.map[x as usize][y as usize] = 4;
                 },
                 0.5..=0.6 => {
-                    world[x as usize][y as usize] = 5;
+                    world.map[x as usize][y as usize] = 5;
                 },
                 0.6..=0.7 => {
-                    world[x as usize][y as usize] = 6;
+                    world.map[x as usize][y as usize] = 6;
                 },
                 0.7..=0.8 => {
-                    world[x as usize][y as usize] = 7;
+                    world.map[x as usize][y as usize] = 7;
                 },
                 0.8..=0.9 => {
-                    world[x as usize][y as usize] = 8;
-                },
-                0.9..=1.0 => {
-                    world[x as usize][y as usize] = 9;
+                    world.map[x as usize][y as usize] = 8;
                 },
                 _ => {
-                    world[x as usize][y as usize] = 0;
+                    world.map[x as usize][y as usize] = 0;
                 }
             }
-
-            let tile_pos = TilePos { x, y };
-            let tile_entity = commands
-                .spawn()
-                .insert_bundle(TileBundle {
-                    position: tile_pos,
-                    tilemap_id: TilemapId(tilemap_entity),
-                    texture: TileTexture(world[x as usize][y as usize] as u32),
-                    ..Default::default()
-                })
-                .id();
-            tile_storage.set(&tile_pos, tile_entity);
-
-            debug!("Spawned tile at {} {}", x, y);
+            debug!("{} {} => {}", x, y, value);
         }
     }
-
-    let tile_size = TilemapTileSize { x: 32.0, y: 32.0 };
-    let grid_size = tile_size.into();
-
-    commands
-        .entity(tilemap_entity)
-        .insert_bundle(TilemapBundle {
-            grid_size,
-            size: tilemap_size,
-            storage: tile_storage,
-            texture: TilemapTexture::Single(texture_handle),
-            tile_size,
-            transform: get_tilemap_center_transform(&tilemap_size, &grid_size, 0.0),
-            ..Default::default()
-        });
 
     app_state.overwrite_set(MyStates::Game).unwrap_or_else(|e| error!("Failed to overwrite state: {:?}", e));
 }
 
-fn spawn_chunks_around_camera(
+fn camera_pos_to_chunk_pos(camera_pos: &Vec2) -> IVec2 {
+    let camera_pos = camera_pos.as_ivec2();
+    let chunk_size: IVec2 = IVec2::new(CHUNK_SIZE.x as i32, CHUNK_SIZE.y as i32);
+    let tile_size: IVec2 = IVec2::new(TILE_SIZE.x as i32, TILE_SIZE.y as i32);
+    camera_pos / (chunk_size * tile_size)
+}
+
+pub fn spawn_chunks_around_camera(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
+    assets: Res<MyAssets>,
     camera_query: Query<&Transform, With<Camera>>,
     mut chunk_manager: ResMut<ChunkManager>,
+    world_map: Res<WorldMap>,
 ) {
     for transform in camera_query.iter() {
         let camera_chunk_pos = camera_pos_to_chunk_pos(&transform.translation.xy());
@@ -180,17 +210,17 @@ fn spawn_chunks_around_camera(
             for x in (camera_chunk_pos.x - 2)..(camera_chunk_pos.x + 2) {
                 if !chunk_manager.spawned_chunks.contains(&IVec2::new(x, y)) {
                     chunk_manager.spawned_chunks.insert(IVec2::new(x, y));
-                    spawn_chunk(&mut commands, &asset_server, IVec2::new(x, y));
+                    spawn_chunk(&mut commands, &assets, IVec2::new(x, y), &world_map);
                 }
             }
         }
     }
 }
 
-fn despawn_outofrange_chunks(
+pub fn despawn_outofrange_chunks(
     mut commands: Commands,
     camera_query: Query<&Transform, With<Camera>>,
-    chunks_query: Query<(Entity, &Transform)>,
+    chunks_query: Query<(Entity, &Transform), Without<Collision>>,
     mut chunk_manager: ResMut<ChunkManager>,
 ) {
     for camera_transform in camera_query.iter() {
