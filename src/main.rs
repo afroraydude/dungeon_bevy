@@ -30,13 +30,15 @@ fn spawn_unknown(mut commands: Commands, assets: Res<MyAssets>) {
             height: 32.0,
             layer: 0,
             offset: Vec2::new(0.0, 0.0),
+            scale: Vec2::new(1.0, 1.0),
+            collider_type: crate::components::ColliderType::Solid
         },
         collision: Collision {
             collisions: Vec::new(),
         },
         sprite: SpriteBundle {
             sprite: Default::default(),
-            transform: Default::default(),
+            transform: Transform::from_xyz(64.0, 64.0, 0.0),
             global_transform: Default::default(),
             texture: assets.unknown.clone(),
             visibility: Default::default(),

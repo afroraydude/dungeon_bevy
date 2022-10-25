@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use crate::components::{AnimationTimer, Health};
 use crate::components::player::{PlayerAnimationState, PlayerAnimationStates, PlayerBundle, PlayerXp};
-use crate::MyAssets;
+use crate::{BoxCollider, Collision, MyAssets};
 
 pub fn create_player (
     mut commands: Commands,
@@ -33,6 +33,8 @@ pub fn create_player (
             height: 20.0,
             layer: 0,
             offset: Vec2::new(0.0, 0.0),
+            scale: Vec2::new(2.0, 2.0),
+            collider_type: crate::components::ColliderType::Solid,
         },
     };
     player.sprite.sprite.index = 0;
@@ -119,13 +121,16 @@ fn draw_all_sprites(
 /*
 Moving the player should get the keybaord input and move the player sprite
 It should also change the animation state to walking if the player is moving
+Prevent movement if colliding with a solid object
 Lastly, when going left, the player should flip the sprite
  */
 pub fn move_player(
     keyboard_input: Res<Input<KeyCode>>,
-    mut query: Query<(&mut Transform, &mut PlayerAnimationState, &mut TextureAtlasSprite)>,
+    mut query: Query<(&mut Transform, &mut PlayerAnimationState, &Collision, &mut TextureAtlasSprite)>,
+    mut entities: Query<(Entity, &BoxCollider, &Transform), Without<PlayerAnimationState>>,
 ) {
-    for (mut transform, mut animation, mut sprite) in query.iter_mut() {
+    for (mut transform, mut animation, collision, mut sprite) in query.iter_mut() {
+        let collisions: Vec<u32> = collision.collisions.clone();
         let mut direction = Vec3::ZERO;
         if keyboard_input.pressed(KeyCode::Left) {
             direction.x -= 1.0;
@@ -143,6 +148,46 @@ pub fn move_player(
         if keyboard_input.pressed(KeyCode::Down) {
             direction.y -= 1.0;
         }
+
+        // if the player is colliding with a solid object, don't move in the direction of the collision
+        if collision.is_colliding() {
+            for (e, collider, other_transform) in entities.iter() {
+                if collisions.contains(&e.id()) {
+                    if collider.collider_type == crate::components::ColliderType::Solid {
+                        // if the player is colliding with a solid object, don't move in the direction of the collision
+                        // they will be able to move in the other directions
+
+
+                        if (transform.translation.x + direction.x) < other_transform.translation.x {
+                            // if the player is moving towards the solid object, don't move
+                            if direction.x > 0.0 {
+                                direction.x = 0.0;
+                            }
+                        }
+                        else if (transform.translation.x + direction.x) > other_transform.translation.x {
+                            // if the player is moving towards the solid object, don't move
+                            if direction.x < 0.0 {
+                                direction.x = 0.0;
+                            }
+                        }
+
+                        if (transform.translation.y + direction.y) < other_transform.translation.y {
+                            // if the player is moving towards the solid object, don't move
+                            if direction.y > 0.0 {
+                                direction.y = 0.0;
+                            }
+                        }
+                        else if (transform.translation.y + direction.y) > other_transform.translation.y {
+                            // if the player is moving towards the solid object, don't move
+                            if direction.y < 0.0 {
+                                direction.y = 0.0;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         if direction.length() > 0.0 {
             direction = direction.normalize();
             transform.translation += direction * 5.0;

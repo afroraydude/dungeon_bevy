@@ -22,36 +22,50 @@ pub struct CircleCollider {
 }
 */
 
+#[derive(Inspectable)]
+pub enum ColliderType {
+    Trigger,
+    Solid,
+}
+
+impl PartialEq for ColliderType {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (ColliderType::Trigger, ColliderType::Trigger) => true,
+            (ColliderType::Solid, ColliderType::Solid) => true,
+            _ => false,
+        }
+    }
+}
+
 #[derive(Inspectable, Component)]
 pub struct BoxCollider {
     pub(crate) width: f32,
     pub(crate) height: f32,
     pub layer: u32,
     pub offset: Vec2,
+    pub scale: Vec2,
+    pub collider_type: ColliderType,
 }
 
 impl BoxCollider {
     pub fn collides_with(&self, other: &BoxCollider, transform: &Transform, other_transform: &Transform) -> bool {
+        if self.layer != other.layer {
+            return false;
+        }
+
         let x = transform.translation.x + self.offset.x;
         let y = transform.translation.y + self.offset.y;
         let other_x = other_transform.translation.x + other.offset.x;
         let other_y = other_transform.translation.y + other.offset.y;
-        let half_width = self.width / 2.0;
-        let half_height = self.height / 2.0;
-        let other_half_width = other.width / 2.0;
-        let other_half_height = other.height / 2.0;
-        let left = x - half_width;
-        let right = x + half_width;
-        let top = y + half_height;
-        let bottom = y - half_height;
-        let other_left = other_x - other_half_width;
-        let other_right = other_x + other_half_width;
-        let other_top = other_y + other_half_height;
-        let other_bottom = other_y - other_half_height;
-        if left < other_right && right > other_left && top > other_bottom && bottom < other_top {
-            return true;
-        }
-        false
+        let width = self.width * self.scale.x;
+        let height = self.height * self.scale.y;
+        let other_width = other.width * other.scale.x;
+        let other_height = other.height * other.scale.y;
+        x < other_x + other_width &&
+            x + width > other_x &&
+            y < other_y + other_height &&
+            y + height > other_y
     }
 }
 
