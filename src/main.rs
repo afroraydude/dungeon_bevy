@@ -1,24 +1,27 @@
-use bevy::diagnostic::{LogDiagnosticsPlugin, FrameTimeDiagnosticsPlugin};
+use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::log::LogSettings;
 use bevy::prelude::*;
 use bevy::render::texture::ImageSettings;
 use bevy::sprite::TextureAtlasBuilderResult;
 use bevy_asset_loader::prelude::*;
-use bevy_inspector_egui::{WorldInspectorPlugin, Inspectable};
+use bevy_inspector_egui::{Inspectable, WorldInspectorPlugin};
+
 use plugins::game_state_plugin::GameStatePlugin;
 use resources::MyStates;
-use crate::components::camera::follow_player;
+
 use crate::components::{BoxCollider, Collision, Unknown};
+use crate::components::camera::follow_player;
 use crate::plugins::hello_plugin::HelloPlugin;
 use crate::plugins::inspections::InspectionPlugin;
 use crate::resources::assets::MyAssets;
-use crate::systems::draw_begining;
+use crate::systems::{draw_begining, generate_world};
 use crate::systems::player::{animate_player, create_player, move_player};
 
 mod components;
 mod systems;
 mod plugins;
 mod resources;
+mod functions;
 
 fn spawn_unknown(mut commands: Commands, assets: Res<MyAssets>) {
     commands.spawn_bundle(Unknown {
@@ -29,7 +32,7 @@ fn spawn_unknown(mut commands: Commands, assets: Res<MyAssets>) {
             layer: 0,
             offset: Vec2::new(0.0, 0.0),
             scale: Vec2::new(1.0, 1.0),
-            collider_type: crate::components::ColliderType::Solid
+            collider_type: crate::components::ColliderType::Solid,
         },
         collision: Collision {
             collisions: Vec::new(),
@@ -40,7 +43,7 @@ fn spawn_unknown(mut commands: Commands, assets: Res<MyAssets>) {
             global_transform: Default::default(),
             texture: assets.unknown.clone(),
             visibility: Default::default(),
-            computed_visibility: Default::default()
+            computed_visibility: Default::default(),
         },
     });
 
@@ -58,7 +61,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_loading_state(
             LoadingState::new(MyStates::AssetLoading)
-                .continue_to_state(MyStates::Game)
+                .continue_to_state(MyStates::WorldGeneration)
                 .with_collection::<MyAssets>(),
         )
         .add_state(MyStates::AssetLoading)
@@ -66,6 +69,10 @@ fn main() {
         .add_plugin(InspectionPlugin)
         .add_plugin(GameStatePlugin)
         .add_plugin(LogDiagnosticsPlugin::default())
+        .add_system_set(
+            SystemSet::on_enter(MyStates::WorldGeneration)
+                .with_system(generate_world)
+        )
         //.add_plugin(FrameTimeDiagnosticsPlugin::default())
         //.add_plugin(HelloPlugin)
         .run();

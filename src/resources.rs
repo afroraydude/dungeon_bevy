@@ -7,5 +7,7 @@ pub struct GreetTimer(pub Timer);
 #[derive(Clone, Eq, PartialEq, Debug, Hash)]
 pub enum MyStates {
     AssetLoading,
+    MainMenu,
+    WorldGeneration,
     Game,
 }
