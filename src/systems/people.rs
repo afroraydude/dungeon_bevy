@@ -23,7 +23,7 @@ pub fn greet_people(
     // if that caused the timer to finish, we say hello to everyone
     if timer.0.tick(time.delta()).just_finished() {
         for name in query.iter() {
-            println!("hello {}!", name.0);
+            debug!("hello {}!", name.0);
         }
     }
 }

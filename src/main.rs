@@ -1,8 +1,12 @@
+use bevy::diagnostic::{LogDiagnosticsPlugin, FrameTimeDiagnosticsPlugin};
+use bevy::log::LogSettings;
 use bevy::prelude::*;
 use bevy::render::texture::ImageSettings;
 use bevy::sprite::TextureAtlasBuilderResult;
 use bevy_asset_loader::prelude::*;
 use bevy_inspector_egui::{WorldInspectorPlugin, Inspectable};
+use plugins::game_state_plugin::GameStatePlugin;
+use resources::MyStates;
 use crate::components::camera::follow_player;
 use crate::components::{BoxCollider, Collision, Unknown};
 use crate::plugins::hello_plugin::HelloPlugin;
@@ -15,12 +19,6 @@ mod components;
 mod systems;
 mod plugins;
 mod resources;
-
-#[derive(Clone, Eq, PartialEq, Debug, Hash)]
-enum MyStates {
-    AssetLoading,
-    Next,
-}
 
 fn spawn_unknown(mut commands: Commands, assets: Res<MyAssets>) {
     commands.spawn_bundle(Unknown {
@@ -45,12 +43,18 @@ fn spawn_unknown(mut commands: Commands, assets: Res<MyAssets>) {
             computed_visibility: Default::default()
         },
     });
+
+    info!("Test object generated")
 }
 
 fn main() {
     App::new()
         .insert_resource(ImageSettings::default_nearest())
         .insert_resource(Msaa { samples: 1 })
+        .insert_resource(LogSettings {
+            filter: "info,wgpu_core=warn,wgpu_hal=warn,bevygame=debug".into(),
+            level: bevy::log::Level::DEBUG,
+        })
         .add_plugins(DefaultPlugins)
         .add_loading_state(
             LoadingState::new(MyStates::AssetLoading)
@@ -60,19 +64,9 @@ fn main() {
         .add_state(MyStates::AssetLoading)
         .add_plugin(WorldInspectorPlugin::new())
         .add_plugin(InspectionPlugin)
-        .add_system_set(
-            SystemSet::on_enter(MyStates::Next)
-                .with_system(draw_begining)
-                .with_system(create_player)
-                .with_system(spawn_unknown),
-        )
-        .add_system_set(
-            SystemSet::on_update(MyStates::Next)
-                .with_system(move_player)
-                .with_system(animate_player)
-                .with_system(follow_player)
-                .with_system(systems::box_colliders)
-        )
+        .add_plugin(GameStatePlugin)
+        .add_plugin(LogDiagnosticsPlugin::default())
+        //.add_plugin(FrameTimeDiagnosticsPlugin::default())
         //.add_plugin(HelloPlugin)
         .run();
 }

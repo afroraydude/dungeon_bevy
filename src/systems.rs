@@ -12,6 +12,7 @@ pub fn draw_begining(
     texture_atlases: Res<Assets<TextureAtlas>>,
 ) {
     commands.spawn_bundle(Camera2dBundle::default()).insert(crate::components::camera::CameraTimer(Timer::from_seconds(0.01, true)));
+    info!("Assets loaded, camera setup")
 }
 
 /*
@@ -33,7 +34,7 @@ pub fn box_colliders(
             if box_collider.collides_with(&box_collider2, &transform, &transform2) {
                 if !collisions.contains(&entity2.id()) {
                     collisions.push(entity2.id());
-                    println!("Collision between {:?} and {:?}", entity.id(), entity2.id());
+                    debug!("Collision between {:?} and {:?}", entity.id(), entity2.id());
                 }
             } else if collisions.contains(&entity2.id()) {
                 collisions.retain(|&x| x != entity2.id());

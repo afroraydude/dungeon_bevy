@@ -39,6 +39,8 @@ pub fn create_player (
     };
     player.sprite.sprite.index = 0;
     commands.spawn_bundle(player).insert(AnimationTimer(Timer::from_seconds(0.2, true)));
+
+    info!("Player spawned and setup")
 }
 
 /*
@@ -128,6 +130,7 @@ pub fn move_player(
     keyboard_input: Res<Input<KeyCode>>,
     mut query: Query<(&mut Transform, &mut PlayerAnimationState, &Collision, &mut TextureAtlasSprite)>,
     mut entities: Query<(Entity, &BoxCollider, &Transform), Without<PlayerAnimationState>>,
+    time: Res<Time>
 ) {
     for (mut transform, mut animation, collision, mut sprite) in query.iter_mut() {
         let collisions: Vec<u32> = collision.collisions.clone();
@@ -190,7 +193,7 @@ pub fn move_player(
 
         if direction.length() > 0.0 {
             direction = direction.normalize();
-            transform.translation += direction * 5.0;
+            transform.translation += direction * 100.0 * time.delta_seconds();
             animation.0 = PlayerAnimationStates::Walk;
         } else {
             animation.0 = PlayerAnimationStates::Idle;
