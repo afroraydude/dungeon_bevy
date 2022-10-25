@@ -58,7 +58,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_loading_state(
             LoadingState::new(MyStates::AssetLoading)
-                .continue_to_state(MyStates::Next)
+                .continue_to_state(MyStates::Game)
                 .with_collection::<MyAssets>(),
         )
         .add_state(MyStates::AssetLoading)

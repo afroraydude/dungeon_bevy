@@ -7,13 +7,13 @@ pub struct GameStatePlugin;
 impl Plugin for GameStatePlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set(
-            SystemSet::on_enter(MyStates::Next)
+            SystemSet::on_enter(MyStates::Game)
                 .with_system(draw_begining)
                 .with_system(create_player)
                 .with_system(spawn_unknown),
         )
         .add_system_set(
-            SystemSet::on_update(MyStates::Next)
+            SystemSet::on_update(MyStates::Game)
                 .with_system(move_player)
                 .with_system(animate_player)
                 .with_system(follow_player)
