@@ -77,7 +77,7 @@ fn main() {
         .add_plugin(GameStatePlugin)
         .add_plugin(LogDiagnosticsPlugin::default())
         .add_plugin(MainMenuPlugin)
-        .add_plugin(WorldGenerationPlugin)
+        //.add_plugin(WorldGenerationPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .run();
 }

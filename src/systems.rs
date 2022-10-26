@@ -88,3 +88,11 @@ pub fn box_colliders(
     }
 }
 
+pub fn remove_loading_text(
+    mut commands: Commands,
+    mut query: Query<(Entity, &LoadingText)>,
+) {
+    for (entity, _) in query.iter_mut() {
+        commands.entity(entity).despawn_recursive();
+    }
+}
