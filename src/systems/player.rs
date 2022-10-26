@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use crate::components::{AnimationTimer, Health};
 use crate::components::player::{PlayerAnimationState, PlayerAnimationStates, PlayerBundle, PlayerXp};
 use crate::{BoxCollider, Collision, MyAssets};
-use crate::systems::get_center_of_world;
+use crate::systems::world_gen::get_center_of_world;
 
 pub fn create_player (
     mut commands: Commands,

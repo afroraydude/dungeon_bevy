@@ -16,8 +16,9 @@ use crate::plugins::hello_plugin::HelloPlugin;
 use crate::plugins::inspections::InspectionPlugin;
 use crate::resources::assets::MyAssets;
 use crate::resources::WorldMap;
-use crate::systems::{ChunkManager, draw_begining, generate_world};
+use crate::systems::draw_begining;
 use crate::systems::player::{animate_player, create_player, move_player};
+use crate::systems::world_gen::ChunkManager;
 
 mod components;
 mod systems;
@@ -66,7 +67,7 @@ fn main() {
         .add_plugin(TilemapPlugin)
         .add_loading_state(
             LoadingState::new(MyStates::AssetLoading)
-                .continue_to_state(MyStates::MainMenud)
+                .continue_to_state(MyStates::MainMenu)
                 .with_collection::<MyAssets>(),
         )
         .add_state(MyStates::AssetLoading)
@@ -80,9 +81,8 @@ fn main() {
                 .with_system(draw_begining)
         ).add_system_set(
         SystemSet::on_enter(MyStates::WorldGeneration)
-            .with_system(generate_world)
+            .with_system(crate::systems::world_gen::generate_world)
         )
-        //.add_plugin(FrameTimeDiagnosticsPlugin::default())
-        //.add_plugin(HelloPlugin)
+        .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .run();
 }
