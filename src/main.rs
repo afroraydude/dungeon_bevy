@@ -8,6 +8,8 @@ use bevy_ecs_tilemap::TilemapPlugin;
 use bevy_inspector_egui::{Inspectable, WorldInspectorPlugin};
 
 use plugins::game_state_plugin::GameStatePlugin;
+use plugins::main_menu::MainMenuPlugin;
+use plugins::world_generation::WorldGenerationPlugin;
 use resources::MyStates;
 
 use crate::components::{BoxCollider, Collision, LoadingText, Unknown};
@@ -61,8 +63,7 @@ fn main() {
             filter: "info,wgpu_core=warn,wgpu_hal=warn,bevygame=debug".into(),
             level: bevy::log::Level::DEBUG,
         })
-        .insert_resource(resources::WorldMap::default())
-        .insert_resource(ChunkManager::default())
+        
         .add_plugins(DefaultPlugins)
         .add_plugin(TilemapPlugin)
         .add_loading_state(
@@ -75,14 +76,8 @@ fn main() {
         .add_plugin(InspectionPlugin)
         .add_plugin(GameStatePlugin)
         .add_plugin(LogDiagnosticsPlugin::default())
-        .add_system_set(
-            SystemSet::on_enter(MyStates::MainMenu)
-
-                .with_system(draw_begining)
-        ).add_system_set(
-        SystemSet::on_enter(MyStates::WorldGeneration)
-            .with_system(crate::systems::world_gen::generate_world)
-        )
+        .add_plugin(MainMenuPlugin)
+        .add_plugin(WorldGenerationPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .run();
 }
