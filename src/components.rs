@@ -96,3 +96,13 @@ pub struct Unknown {
     #[bundle]
     pub sprite: SpriteBundle
 }
+
+
+#[derive(Bundle)]
+pub struct WorldTile {
+    #[bundle]
+    pub sprite: SpriteSheetBundle
+}
+
+#[derive(Component)]
+pub struct LoadingText;

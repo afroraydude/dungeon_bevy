@@ -8,5 +8,11 @@ pub struct MyAssets {
     pub player: Handle<TextureAtlas>,
 
     #[asset(path = "unknown.png")]
-    pub unknown: Handle<Image>
+    pub unknown: Handle<Image>,
+
+    #[asset(path = "TX Tileset Grass.png")]
+    pub grasses_raw: Handle<Image>,
+
+    #[asset(path = "font.ttf")]
+    pub font: Handle<Font>,
 }
