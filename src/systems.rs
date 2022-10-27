@@ -18,6 +18,7 @@ pub mod people;
 pub mod player;
 mod basic_setup;
 pub mod world_gen;
+pub mod dungeon_gen;
 
 pub fn draw_begining(
     mut commands: Commands,
