@@ -16,15 +16,6 @@ https://gamedev.stackexchange.com/questions/82059/algorithm-for-procedural-2d-ma
 https://gamedevelopment.tutsplus.com/tutorials/how-to-use-bsp-trees-to-generate-game-maps--gamedev-12268
 */
 
-
-struct Leaf {
-    x: i32,
-    y: i32,
-    width: i32,
-    height: i32,
-    children: Vec<Leaf>,
-}
-
 pub fn gen_dungeon(mut commands: Commands) {
     let min_room_size = UVec2::new(4, 4);
     let max_room_size = UVec2::new(16, 16);
