@@ -1,16 +1,9 @@
-use std::borrow::{Borrow, BorrowMut};
 use std::cmp::min;
 use bevy::prelude::*;
-use crate::{BoxCollider, Collision, LoadingText, MyAssets, MyStates};
-use crate::components::WorldTile;
-use noise::{core::perlin::{perlin_2d, perlin_3d, perlin_4d}, Fbm, Perlin, permutationtable::PermutationTable};
+use crate::{Collision, MyAssets, MyStates};
+use noise::{Fbm, Perlin};
 use bevy_ecs_tilemap::prelude::*;
-use bevy::{math::Vec3Swizzles, prelude::*, render::texture::ImageSettings, utils::HashSet};
-use bevy::app::AppLabel;
-use bevy::render::camera::{CameraProjection, CameraRenderGraph, DepthCalculation};
-use bevy::render::primitives::Frustum;
-use bevy::render::view::VisibleEntities;
-use bevy_inspector_egui::egui::Shape::Vec;
+use bevy::{math::Vec3Swizzles, utils::HashSet};
 use noise::utils::{NoiseMapBuilder, PlaneMapBuilder};
 use crate::resources::{CHUNK_SIZE, RENDER_CHUNK_SIZE, RENDER_SIZE, RenderTimer, TILE_SIZE, WORLD_SIZE, WorldMap};
 
@@ -20,15 +13,15 @@ pub struct ChunkManager {
 }
 
 fn tile_to_world_pos(tile_pos: TilePos, chunk_pos: IVec2) -> Vec2 {
-    let mut x = (tile_pos.x as i32 + (chunk_pos.x * CHUNK_SIZE.x as i32)) as f32;
-    let mut y = (tile_pos.y as i32 + (chunk_pos.y * CHUNK_SIZE.y as i32)) as f32;
+    let x = (tile_pos.x as i32 + (chunk_pos.x * CHUNK_SIZE.x as i32)) as f32;
+    let y = (tile_pos.y as i32 + (chunk_pos.y * CHUNK_SIZE.y as i32)) as f32;
 
     Vec2::new(x, y)
 }
 
 pub fn get_center_of_world() -> Vec2 {
-    let mut x = (((WORLD_SIZE.x as i32) * TILE_SIZE.x as i32) / 2) as f32;
-    let mut y = (((WORLD_SIZE.y as i32) * TILE_SIZE.y as i32) / 2) as f32;
+    let x = (((WORLD_SIZE.x as i32) * TILE_SIZE.x as i32) / 2) as f32;
+    let y = (((WORLD_SIZE.y as i32) * TILE_SIZE.y as i32) / 2) as f32;
 
     Vec2::new(x, y)
 }
@@ -83,9 +76,6 @@ fn spawn_chunk(commands: &mut Commands, assets: &Res<MyAssets>, chunk_pos: IVec2
 }
 
 pub fn generate_world(
-    mut commands: Commands,
-    assets: Res<MyAssets>,
-    texture_atlases: Res<Assets<TextureAtlas>>,
     mut app_state: ResMut<State<MyStates>>,
     mut world: ResMut<WorldMap>,
 ) {
@@ -98,7 +88,7 @@ pub fn generate_world(
 
     debug!("Fbm loaded");
 
-    let mut map = PlaneMapBuilder::<_, 2>::new(fbm)
+    let map = PlaneMapBuilder::<_, 2>::new(fbm)
         .set_size(WORLD_SIZE.x as usize, WORLD_SIZE.y as usize)
         .set_x_bounds(0.0, 1.0)
         .set_y_bounds(0.0, 1.0)
@@ -110,37 +100,28 @@ pub fn generate_world(
         for y in 0..WORLD_SIZE.y {
             let value = map.get_value(x as usize, y as usize);
 
-            match value {
-                0.0..=0.1 => {
-                    world.map[x as usize][y as usize] = 0;
-                },
-                0.1..=0.2 => {
-                    world.map[x as usize][y as usize] = 1;
-                },
-                0.2..=0.3 => {
-                    world.map[x as usize][y as usize] = 2;
-                },
-                0.3..=0.4 => {
-                    world.map[x as usize][y as usize] = 3;
-                },
-                0.4..=0.5 => {
-                    world.map[x as usize][y as usize] = 4;
-                },
-                0.5..=0.6 => {
-                    world.map[x as usize][y as usize] = 5;
-                },
-                0.6..=0.7 => {
-                    world.map[x as usize][y as usize] = 6;
-                },
-                0.7..=0.8 => {
-                    world.map[x as usize][y as usize] = 7;
-                },
-                0.8..=0.9 => {
-                    world.map[x as usize][y as usize] = 8;
-                },
-                _ => {
-                    world.map[x as usize][y as usize] = 0;
-                }
+            if value < 0.0 {
+                world.map[x as usize][y as usize] = 0;
+            } else if value < 0.1 {
+                world.map[x as usize][y as usize] = 1;
+            } else if value < 0.2 {
+                world.map[x as usize][y as usize] = 2;
+            } else if value < 0.3 {
+                world.map[x as usize][y as usize] = 3;
+            } else if value < 0.4 {
+                world.map[x as usize][y as usize] = 4;
+            } else if value < 0.5 {
+                world.map[x as usize][y as usize] = 5;
+            } else if value < 0.6 {
+                world.map[x as usize][y as usize] = 6;
+            } else if value < 0.7 {
+                world.map[x as usize][y as usize] = 7;
+            } else if value < 0.8 {
+                world.map[x as usize][y as usize] = 8;
+            } else if value < 0.9 {
+                world.map[x as usize][y as usize] = 9;
+            } else {
+                world.map[x as usize][y as usize] = 10;
             }
         }
     }
@@ -163,7 +144,7 @@ pub fn spawn_chunks_around_camera(
     camera_query: Query<&Transform, With<Camera>>,
     mut chunk_manager: ResMut<ChunkManager>,
     world_map: Res<WorldMap>,
-    mut time: ResMut<Time>,
+    time: Res<Time>,
     mut timer: ResMut<RenderTimer>
 ) {
     if timer.0.tick(time.delta()).finished() {
@@ -190,7 +171,7 @@ pub fn despawn_outofrange_chunks(
     camera_query: Query<&Transform, With<Camera>>,
     chunks_query: Query<(Entity, &Transform), Without<Collision>>,
     mut chunk_manager: ResMut<ChunkManager>,
-    mut time: ResMut<Time>,
+    time: Res<Time>,
     mut timer: ResMut<RenderTimer>
 ) {
     if timer.0.tick(time.delta()).finished() {

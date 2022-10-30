@@ -1,18 +1,5 @@
-use std::borrow::{Borrow, BorrowMut};
-use std::cmp::min;
 use bevy::prelude::*;
 use crate::{BoxCollider, Collision, LoadingText, MyAssets, MyStates};
-use crate::components::WorldTile;
-use noise::{core::perlin::{perlin_2d, perlin_3d, perlin_4d}, Fbm, Perlin, permutationtable::PermutationTable};
-use bevy_ecs_tilemap::prelude::*;
-use bevy::{math::Vec3Swizzles, prelude::*, render::texture::ImageSettings, utils::HashSet};
-use bevy::app::AppLabel;
-use bevy::render::camera::{CameraProjection, CameraRenderGraph, DepthCalculation};
-use bevy::render::primitives::Frustum;
-use bevy::render::view::VisibleEntities;
-use bevy_inspector_egui::egui::Shape::Vec;
-use noise::utils::{NoiseMapBuilder, PlaneMapBuilder};
-use crate::resources::{CHUNK_SIZE, RENDER_CHUNK_SIZE, RENDER_SIZE, RenderTimer, TILE_SIZE, WORLD_SIZE, WorldMap};
 
 pub mod people;
 pub mod player;
@@ -23,7 +10,6 @@ pub mod dungeon_gen;
 pub fn draw_begining(
     mut commands: Commands,
     assets: Res<MyAssets>,
-    texture_atlases: Res<Assets<TextureAtlas>>,
     mut app_state: ResMut<State<MyStates>>,
 ) {
     //commands.spawn_bundle(Camera2dBundle::default()).insert(crate::components::camera::CameraTimer(Timer::from_seconds(0.01, true)));
@@ -57,7 +43,7 @@ pub fn draw_begining(
                 }),
         )
         .insert(LoadingText);
-    app_state.overwrite_set(MyStates::WorldGeneration).unwrap_or_else(|e| error!("Error: {}", e));
+    app_state.overwrite_set(MyStates::DungeonGeneration).unwrap_or_else(|e| error!("Error: {}", e));
 }
 
 /*
@@ -66,9 +52,8 @@ Get the collisions for each collider
 If there is a collision, provide the entity that is colliding with the collider
  */
 pub fn box_colliders(
-    mut commands: Commands,
-    mut query: Query<(&crate::components::BoxCollider, Entity, &mut crate::components::Collision, &Transform)>,
-    mut query2: Query<(&crate::components::BoxCollider, Entity, &Transform)>,
+    mut query: Query<(&BoxCollider, Entity, &mut Collision, &Transform)>,
+    mut query2: Query<(&BoxCollider, Entity, &Transform)>,
 ) {
     for (box_collider, entity, mut collision, transform) in query.iter_mut() {
         let mut collisions: std::vec::Vec<u32> = collision.collisions.clone();

@@ -1,5 +1,5 @@
 use bevy_ecs_tilemap::prelude::*;
-use bevy::{math::Vec3Swizzles, prelude::*, render::texture::ImageSettings, utils::HashSet};
+use bevy::prelude::*;
 
 pub mod assets;
 
@@ -11,7 +11,7 @@ pub struct GreetTimer(pub Timer);
 pub enum MyStates {
     AssetLoading,
     MainMenu,
-    WorldGeneration,
+    DungeonGeneration,
     Game,
 }
 

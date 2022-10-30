@@ -1,32 +1,25 @@
-use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
+use bevy::diagnostic::LogDiagnosticsPlugin;
 use bevy::log::LogSettings;
 use bevy::prelude::*;
 use bevy::render::texture::ImageSettings;
-use bevy::sprite::TextureAtlasBuilderResult;
 use bevy_asset_loader::prelude::*;
 use bevy_ecs_tilemap::TilemapPlugin;
-use bevy_inspector_egui::{Inspectable, WorldInspectorPlugin};
+use bevy_inspector_egui::{WorldInspectorPlugin};
 
+use plugins::dungeon_gen::DungeonGenPlugin;
 use plugins::game_state_plugin::GameStatePlugin;
 use plugins::main_menu::MainMenuPlugin;
-use plugins::world_generation::WorldGenerationPlugin;
 use resources::MyStates;
 
 use crate::components::{BoxCollider, Collision, LoadingText, Unknown};
-use crate::components::camera::follow_player;
-use crate::plugins::hello_plugin::HelloPlugin;
 use crate::plugins::inspections::InspectionPlugin;
 use crate::resources::assets::MyAssets;
-use crate::resources::WorldMap;
-use crate::systems::draw_begining;
-use crate::systems::player::{animate_player, create_player, move_player};
-use crate::systems::world_gen::ChunkManager;
 
 mod components;
 mod systems;
 mod plugins;
 mod resources;
-mod functions;
+//mod functions;
 
 fn spawn_unknown(mut commands: Commands, assets: Res<MyAssets>) {
     commands.spawn_bundle(Unknown {
@@ -68,7 +61,7 @@ fn main() {
         .add_plugin(TilemapPlugin)
         .add_loading_state(
             LoadingState::new(MyStates::AssetLoading)
-                .continue_to_state(MyStates::MainMenu)
+                .continue_to_state(MyStates::DungeonGeneration)
                 .with_collection::<MyAssets>(),
         )
         .add_state(MyStates::AssetLoading)
@@ -76,8 +69,9 @@ fn main() {
         .add_plugin(InspectionPlugin)
         .add_plugin(GameStatePlugin)
         .add_plugin(LogDiagnosticsPlugin::default())
+        .add_plugin(DungeonGenPlugin)
         .add_plugin(MainMenuPlugin)
         //.add_plugin(WorldGenerationPlugin)
-        .add_plugin(FrameTimeDiagnosticsPlugin::default())
+        //.add_plugin(FrameTimeDiagnosticsPlugin::default())
         .run();
 }

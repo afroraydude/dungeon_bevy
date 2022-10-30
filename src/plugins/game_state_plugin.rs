@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{systems::{draw_begining, player::{create_player, move_player, animate_player}}, spawn_unknown, resources::MyStates, components::camera::follow_player};
+use crate::{systems::{player::{create_player, move_player, animate_player}}, spawn_unknown, resources::MyStates, components::camera::follow_player};
 use crate::components::camera::CameraTimer;
 use crate::resources::RenderTimer;
 use crate::systems::world_gen::{despawn_outofrange_chunks, spawn_chunks_around_camera};

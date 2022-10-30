@@ -10,7 +10,7 @@ impl Plugin for WorldGenerationPlugin {
       app.insert_resource(crate::resources::WorldMap::default())
       .insert_resource(crate::systems::world_gen::ChunkManager::default())
       .add_system_set(
-        SystemSet::on_enter(MyStates::WorldGeneration)
+        SystemSet::on_enter(MyStates::DungeonGeneration)
             .with_system(crate::systems::world_gen::generate_world)
         );
     }

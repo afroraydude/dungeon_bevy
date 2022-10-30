@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use bevy_inspector_egui::Inspectable;
 use crate::components::Health;
 
+#[allow(dead_code)]
 pub enum PlayerAnimationStates {
     Idle,
     Blink,

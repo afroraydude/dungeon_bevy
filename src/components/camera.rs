@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::components::player::{PlayerAnimationState, PlayerXp};
+use crate::components::player::{PlayerAnimationState};
 
 pub struct CameraTimer(pub Timer);
 
@@ -17,16 +17,16 @@ pub fn follow_player(
     time: ResMut<Time>,
     mut camera_timer: ResMut<CameraTimer>,
 ) {
-    for (transform, animation) in query.iter_mut() {
-        for (mut camera_transform, camera) in camera_query.iter_mut() {
+    for (transform, _animation) in query.iter_mut() {
+        for (mut camera_transform, _camera) in camera_query.iter_mut() {
             if camera_timer.0.tick(time.delta()).just_finished() {
-                let mut target = transform.translation();
+                let target = transform.translation();
 
                 let mut camera_x = camera_transform.translation.x;
                 let mut camera_y = camera_transform.translation.y;
 
-                let mut camera_x_target = target.x;
-                let mut camera_y_target = target.y;
+                let camera_x_target = target.x;
+                let camera_y_target = target.y;
 
                 // lerping between camera position and target position
                 camera_x = lerp(camera_x, camera_x_target, 0.1);

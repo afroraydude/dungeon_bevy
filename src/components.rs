@@ -75,6 +75,7 @@ pub struct Collision {
 }
 
 impl FromWorld for Collision {
+    #[allow(unused_variables)]
     fn from_world(world: &mut World) -> Self {
         Collision {
             collisions: Vec::new(),

@@ -96,6 +96,8 @@ This will draw all the sprites in the texture atlas in a grid
 8 rows and 9 columns of 32x32 sprites
 start at the top left and go right then down
  */
+
+#[allow(dead_code)]
 fn draw_all_sprites(
     mut commands: Commands,
     my_assets: Res<MyAssets>,
@@ -136,7 +138,7 @@ Lastly, when going left, the player should flip the sprite
 pub fn move_player(
     keyboard_input: Res<Input<KeyCode>>,
     mut query: Query<(&mut Transform, &mut PlayerAnimationState, &Collision, &mut TextureAtlasSprite)>,
-    mut entities: Query<(Entity, &BoxCollider, &Transform), Without<PlayerAnimationState>>,
+    entities: Query<(Entity, &BoxCollider, &Transform), Without<PlayerAnimationState>>,
     time: Res<Time>
 ) {
     for (mut transform, mut animation, collision, mut sprite) in query.iter_mut() {
