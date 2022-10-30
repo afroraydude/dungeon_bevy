@@ -2,6 +2,8 @@ use std::{io::Write, time::Instant};
 
 use bevy::prelude::*;
 use bevy::utils::tracing::field::debug;
+use crate::components::LoadingText;
+use crate::resources::assets::MyAssets;
 
 /*
 Resources
@@ -25,7 +27,7 @@ const MAX_LEAF_SIZE: u32 = 64;
 const MIN_ROOM_SIZE: u32 = MIN_LEAF_SIZE - 2;
 
 #[derive(Debug, Clone)]
-struct Room {
+pub struct Room {
     x: u32,
     y: u32,
     w: u32,
@@ -33,7 +35,7 @@ struct Room {
 }
 
 #[derive(Debug, Clone)]
-struct Leaf {
+pub struct Leaf {
     pub x: u32,
     pub y: u32,
     pub width: u32,
@@ -42,6 +44,16 @@ struct Leaf {
     pub right_child: Option<Box<Leaf>>,
     pub room: Option<Room>,
     pub halls: Vec<Room>,
+}
+
+pub struct Dungeon {
+    pub leafs: Vec<Leaf>,
+}
+
+impl Dungeon {
+    pub fn new() -> Self {
+        Self { leafs: Vec::new() }
+    }
 }
 
 impl Leaf {
@@ -298,10 +310,9 @@ fn gen_dungeon_stress_test_internal(width: u32, height: u32) {
     let mut run_times: Vec<u128> = Vec::new();
 
     while i < max {
-
         let start_time = Instant::now();
 
-        gen_dungeon(width, height);
+        //gen_dungeon(width, height);
 
         let run_time = start_time.elapsed().as_millis();
         run_times.push(run_time.clone());
@@ -352,12 +363,45 @@ fn print_leaf_data(leafs: &Vec<Leaf>) {
     }
 }
 
-pub fn gen_dungeon(width: u32, height: u32) {
+//pub fn gen_dungeon(width: u32, height: u32) {
+pub fn gen_dungeon(
+    mut commands: Commands,
+    mut dungeon: ResMut<Dungeon>,
+    assets: Res<MyAssets>,
+) {
+    commands
+        .spawn_bundle(
+            // Create a TextBundle that has a Text with a single section.
+            TextBundle::from_section(
+                // Accepts a `String` or any type that converts into a `String`, such as `&str`
+                "Loading...".to_string(),
+                TextStyle {
+                    font: assets.font.clone(),
+                    font_size: 100.0,
+                    color: Color::WHITE,
+                },
+            ) // Set the alignment of the Text
+                .with_text_alignment(TextAlignment::TOP_CENTER)
+                // Set the style of the TextBundle itself.
+                .with_style(Style {
+                    align_self: AlignSelf::Center,
+                    position_type: PositionType::Absolute,
+                    position: UiRect {
+                        top: Val::Px(5.0),
+                        left: Val::Px(15.0),
+                        ..default()
+                    },
+                    ..default()
+                }),
+        )
+        .insert(LoadingText);
+
+
     let mut file = std::fs::File::create(format!("generation.txt")).unwrap();
 
     let mut leafs: Vec<Leaf> = Vec::new();
 
-    let root = Leaf::new(0, 0, width, height);
+    let root = Leaf::new(0, 0, 128, 128);
 
     leafs.push(root.clone());
 
@@ -391,6 +435,11 @@ pub fn gen_dungeon(width: u32, height: u32) {
     for leaf in leafs.iter_mut() {
         leaf.create_rooms();
     }
+
+    dungeon.leafs = leafs.clone();
+
+    // deallocate leafs
+    leafs.clear();
 
     //draw_rooms_to_file(&mut file, &leafs, root.width, root.height);
 }

@@ -61,7 +61,7 @@ fn main() {
         .add_plugin(TilemapPlugin)
         .add_loading_state(
             LoadingState::new(MyStates::AssetLoading)
-                .continue_to_state(MyStates::DungeonGeneration)
+                .continue_to_state(MyStates::MainMenu)
                 .with_collection::<MyAssets>(),
         )
         .add_state(MyStates::AssetLoading)

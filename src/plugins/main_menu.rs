@@ -13,7 +13,7 @@ impl Plugin for MainMenuPlugin {
               .with_system(draw_begining)
         );
         app.add_system_set(
-          SystemSet::on_exit(MyStates::MainMenu)
+          SystemSet::on_exit(MyStates::DungeonGeneration)
               .with_system(crate::systems::remove_loading_text)
         );
     }

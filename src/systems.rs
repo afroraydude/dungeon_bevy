@@ -9,7 +9,6 @@ pub mod dungeon_gen;
 
 pub fn draw_begining(
     mut commands: Commands,
-    assets: Res<MyAssets>,
     mut app_state: ResMut<State<MyStates>>,
 ) {
     //commands.spawn_bundle(Camera2dBundle::default()).insert(crate::components::camera::CameraTimer(Timer::from_seconds(0.01, true)));
@@ -17,32 +16,7 @@ pub fn draw_begining(
     commands.spawn_bundle(Camera2dBundle::default());
     info!("Assets loaded, camera setup");
 
-    commands
-        .spawn_bundle(
-            // Create a TextBundle that has a Text with a single section.
-            TextBundle::from_section(
-                // Accepts a `String` or any type that converts into a `String`, such as `&str`
-                "Loading...".to_string(),
-                TextStyle {
-                    font: assets.font.clone(),
-                    font_size: 100.0,
-                    color: Color::WHITE,
-                },
-            ) // Set the alignment of the Text
-                .with_text_alignment(TextAlignment::TOP_CENTER)
-                // Set the style of the TextBundle itself.
-                .with_style(Style {
-                    align_self: AlignSelf::Center,
-                    position_type: PositionType::Absolute,
-                    position: UiRect {
-                        top: Val::Px(5.0),
-                        left: Val::Px(15.0),
-                        ..default()
-                    },
-                    ..default()
-                }),
-        )
-        .insert(LoadingText);
+
     app_state.overwrite_set(MyStates::DungeonGeneration).unwrap_or_else(|e| error!("Error: {}", e));
 }
 
