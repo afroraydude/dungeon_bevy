@@ -1,6 +1,7 @@
 use std::{io::Write, time::Instant};
 
 use bevy::prelude::*;
+use bevy::utils::tracing::field::debug;
 
 /*
 Resources
@@ -40,6 +41,7 @@ struct Leaf {
     pub left_child: Option<Box<Leaf>>,
     pub right_child: Option<Box<Leaf>>,
     pub room: Option<Room>,
+    pub halls: Vec<Room>,
 }
 
 impl Leaf {
@@ -52,6 +54,7 @@ impl Leaf {
             left_child: None,
             right_child: None,
             room: None,
+            halls: Vec::new(),
         }
     }
 
@@ -112,6 +115,7 @@ impl Leaf {
     }
 
     pub fn create_rooms(&mut self) {
+        // there is already a room here
         if self.room.is_some() {
             return;
         }
@@ -122,6 +126,9 @@ impl Leaf {
             }
             if !self.right_child.is_none() {
                 self.right_child.as_mut().unwrap().create_rooms();
+            }
+            if !self.left_child.is_none() && !self.right_child.is_none() {
+                self.create_halls();
             }
         } else {
             let room_width = rand::random::<u32>() % (self.width - MIN_ROOM_SIZE) + MIN_ROOM_SIZE;
@@ -174,6 +181,196 @@ impl Leaf {
             }
         }
     }
+
+    pub fn create_halls(&mut self) {
+        // get the rooms from the children of this node
+        let l_room: Room;
+        let r_room: Room;
+
+        if !self.left_child.is_none() {
+            l_room = self.left_child.as_ref().unwrap().get_room().unwrap();
+        } else {
+            return;
+        }
+
+        if !self.right_child.is_none() {
+            r_room = self.right_child.as_ref().unwrap().get_room().unwrap();
+        } else {
+            return;
+        }
+
+        let mut halls: Vec<Room> = Vec::new();
+
+        // create rando points between the top left and bottom right corners of the rooms
+        let left_point: IVec2 = IVec2::new(
+            rand::random::<i32>() % (l_room.w as i32) + (l_room.x as i32),
+            rand::random::<i32>() % (l_room.h as i32) + (l_room.y as i32),
+        );
+
+        let right_point: IVec2 = IVec2::new(
+            rand::random::<i32>() % (r_room.w as i32) + (r_room.x as i32),
+            rand::random::<i32>() % (r_room.h as i32) + (r_room.y as i32),
+        );
+
+        let width = right_point.x - left_point.x;
+        let height = right_point.y - left_point.y;
+
+        debug!("width: {}, height: {}", width, height);
+
+        if width < 0 {
+            if height < 0 {
+                if rand::random::<bool>() {
+                    halls.push(Room {
+                        x: right_point.x.abs() as u32,
+                        y: left_point.y.abs() as u32,
+                        w: (width).abs() as u32,
+                        h: 1,
+                    });
+
+                    halls.push(Room {
+                        x: right_point.x.abs() as u32,
+                        y: right_point.y.abs() as u32,
+                        w: 1,
+                        h: (height).abs() as u32,
+                    });
+                } else {
+                    halls.push(Room {
+                        x: right_point.x.abs() as u32,
+                        y: right_point.y.abs() as u32,
+                        w: (width).abs() as u32,
+                        h: 1,
+                    });
+
+                    halls.push(Room {
+                        x: left_point.x.abs() as u32,
+                        y: right_point.y.abs() as u32,
+                        w: 1,
+                        h: (height).abs() as u32,
+                    });
+                }
+            } else if height > 0 {
+                if rand::random::<bool>() {
+                    halls.push(Room {
+                        x: right_point.x.abs() as u32,
+                        y: left_point.y.abs() as u32,
+                        w: (width).abs() as u32,
+                        h: 1,
+                    });
+
+                    halls.push(Room {
+                        x: right_point.x.abs() as u32,
+                        y: left_point.y.abs() as u32,
+                        w: 1,
+                        h: height.abs() as u32,
+                    });
+                } else {
+                    halls.push(Room {
+                        x: right_point.x.abs() as u32,
+                        y: right_point.y.abs() as u32,
+                        w: (width).abs() as u32,
+                        h: 1,
+                    });
+
+                    halls.push(Room {
+                        x: left_point.x.abs() as u32,
+                        y: left_point.y.abs() as u32,
+                        w: 1,
+                        h: height.abs() as u32,
+                    });
+                }
+            } else {
+                halls.push(Room {
+                    x: right_point.x.abs() as u32,
+                    y: left_point.y.abs() as u32,
+                    w: width.abs() as u32,
+                    h: 1,
+                });
+            }
+        } else if width > 0 {
+            if height < 0 {
+                if rand::random::<bool>() {
+                    halls.push(Room {
+                        x: left_point.x.abs() as u32,
+                        y: right_point.y.abs() as u32,
+                        w: width.abs() as u32,
+                        h: 1,
+                    });
+                    halls.push(Room {
+                        x: left_point.x.abs() as u32,
+                        y: right_point.y.abs() as u32,
+                        w: 1,
+                        h: height.abs() as u32,
+                    });
+                } else {
+                    halls.push(Room {
+                        x: left_point.x.abs() as u32,
+                        y: left_point.y.abs() as u32,
+                        w: width.abs() as u32,
+                        h: 1,
+                    });
+                    halls.push(Room {
+                        x: right_point.x.abs() as u32,
+                        y: right_point.y.abs() as u32,
+                        w: 1,
+                        h: height.abs() as u32,
+                    });
+                }
+            } else if height > 0 {
+                if rand::random::<bool>() {
+                    halls.push(Room {
+                        x: left_point.x.abs() as u32,
+                        y: left_point.y.abs() as u32,
+                        w: width.abs() as u32,
+                        h: 1,
+                    });
+                    halls.push(Room {
+                        x: right_point.x.abs() as u32,
+                        y: left_point.y.abs() as u32,
+                        w: 1,
+                        h: height.abs() as u32,
+                    });
+                } else {
+                    halls.push(Room {
+                        x: left_point.x.abs() as u32,
+                        y: right_point.y.abs() as u32,
+                        w: width.abs() as u32,
+                        h: 1,
+                    });
+                    halls.push(Room {
+                        x: left_point.x.abs() as u32,
+                        y: left_point.y.abs() as u32,
+                        w: 1,
+                        h: height.abs() as u32,
+                    });
+                }
+            } else {
+                halls.push(Room {
+                    x: left_point.x.abs() as u32,
+                    y: left_point.y.abs() as u32,
+                    w: width.abs() as u32,
+                    h: 1,
+                });
+            }
+        } else {
+            if height < 0 {
+                halls.push(Room {
+                    x: right_point.x.abs() as u32,
+                    y: right_point.y.abs() as u32,
+                    w: 1,
+                    h: height.abs() as u32,
+                })
+            } else if height > 0 {
+                halls.push(Room {
+                    x: left_point.x.abs() as u32,
+                    y: left_point.y.abs() as u32,
+                    w: 1,
+                    h: height.abs() as u32,
+                })
+            }
+        }
+
+        self.halls.append(&mut halls);
+    }
 }
 
 #[allow(dead_code)]
@@ -187,8 +384,19 @@ fn draw_rooms_to_file(file: &mut std::fs::File, leafs: &Vec<Leaf>, width: u32, h
             }
             let room = leaf.room.as_ref().unwrap();
             // draw room with # as walls and . as floor
-            for x in room.x..room.x + room.w {
+            for x in room.x..(room.x + room.w) {
                 for y in room.y..room.y + room.h {
+                    grid[y as usize][x as usize] = '.';
+                }
+            }
+        }
+
+        // draw halls with # as walls and . as floor
+        for hall in &leaf.halls {
+            debug!("x: {}, y: {}, w: {}, h: {}", hall.x, hall.y, hall.w, hall.h);
+            debug!("x + w: {}, y + h: {}", hall.x + hall.w, hall.y + hall.h);
+            for x in hall.x..hall.x + hall.w {
+                for y in hall.y..hall.y + hall.h {
                     grid[y as usize][x as usize] = '.';
                 }
             }
@@ -218,7 +426,7 @@ fn gen_dungeon_stress_test_internal(width: u32, height: u32) {
 
         let start_time = Instant::now();
 
-        gen_dungeon(width, height);
+        gen_dungeon();
 
         let run_time = start_time.elapsed().as_millis();
         run_times.push(run_time.clone());
@@ -257,10 +465,12 @@ pub fn gen_dungeon_stress_test() {
     std::process::exit(0);
 }
 
-pub fn gen_dungeon(width: u32, height: u32) {
+pub fn gen_dungeon() {
+    let mut file = std::fs::File::create(format!("generation.txt")).unwrap();
+
     let mut leafs: Vec<Leaf> = Vec::new();
 
-    let root = Leaf::new(0, 0, width, width);
+    let root = Leaf::new(0, 0, 256, 256);
 
     leafs.push(root.clone());
 
@@ -290,11 +500,13 @@ pub fn gen_dungeon(width: u32, height: u32) {
         leafs.append(&mut new_leafs);
     }
 
+    // create rooms
     for leaf in leafs.iter_mut() {
         leaf.create_rooms();
     }
 
-    /*write!(file, "Dungeon {}:\r", i).unwrap();
     draw_rooms_to_file(&mut file, &leafs, root.width, root.height);
-    write!(file, "\r").unwrap();*/
+
+    // exit
+    std::process::exit(0);
 }
