@@ -204,10 +204,10 @@ fn draw_rooms_to_file(file: &mut std::fs::File, leafs: &Vec<Leaf>, width: u32, h
     }
 }
 
-pub fn gen_dungeon() {
+fn gen_dungeon_stress_test_internal(width: u32, height: u32) {
     //let min_room_size = UVec2::new(4, 4);
     //let max_room_size = UVec2::new(16, 16);
-    //let mut file = std::fs::File::create(format!("generation.txt")).unwrap();
+    /*let mut file = std::fs::File::create(format!("generation.txt")).unwrap();*/
 
     let mut i = 0;
     let max = 10;
@@ -215,55 +215,15 @@ pub fn gen_dungeon() {
     let mut run_times: Vec<u128> = Vec::new();
 
     while i < max {
-        debug!("Generating dungeon");
-        
+
         let start_time = Instant::now();
 
-        let mut leafs: Vec<Leaf> = Vec::new();
-
-        let root = Leaf::new(0, 0, 264, 264);
-
-        leafs.push(root.clone());
-
-        let mut did_split = true;
-
-        while did_split {
-            did_split = false;
-
-            let mut new_leafs: Vec<Leaf> = Vec::new();
-
-            for leaf in leafs.iter_mut() {
-                if leaf.left_child.is_none() && leaf.right_child.is_none() {
-                    if leaf.width > MAX_LEAF_SIZE
-                        || leaf.height > MAX_LEAF_SIZE
-                        || rand::random::<i32>() % 100 > 25
-                    {
-                        if leaf.split() {
-                            did_split = true;
-                            new_leafs.push(*leaf.left_child.as_ref().unwrap().clone());
-                            new_leafs.push(*leaf.right_child.as_ref().unwrap().clone());
-                        }
-                    }
-                }
-            }
-
-            // add new leafs to leafs
-            leafs.append(&mut new_leafs);
-        }
-
-        for leaf in leafs.iter_mut() {
-            leaf.create_rooms();
-        }
-
-        //write!(file, "Dungeon {}:\r", i).unwrap();
-        //draw_rooms_to_file(&mut file, &leafs, root.width, root.height);
-        //write!(file, "\r").unwrap();
+        gen_dungeon(width, height);
 
         let run_time = start_time.elapsed().as_millis();
         run_times.push(run_time.clone());
 
         i += 1;
-        debug!("Generation run: {} took {}ms", i, run_time);
     }
 
     run_times.sort();
@@ -278,7 +238,63 @@ pub fn gen_dungeon() {
     debug!("Median time: {}ms", median_time);
     debug!("Min time: {}ms", min_time);
     debug!("Max time: {}ms", max_time);
+}
+
+pub fn gen_dungeon_stress_test() {
+    debug!("Starting stress test");
+
+    debug!("Generating 256x256 dungeon");
+    gen_dungeon_stress_test_internal(256, 256);
+
+    debug!("Generating 1024x1024 dungeon");
+    gen_dungeon_stress_test_internal(1024, 1024);
+
+    debug!("Generating 4096x4096 dungeon");
+    gen_dungeon_stress_test_internal(4096, 4096);
+
 
     // exit the program
     std::process::exit(0);
+}
+
+pub fn gen_dungeon(width: u32, height: u32) {
+    let mut leafs: Vec<Leaf> = Vec::new();
+
+    let root = Leaf::new(0, 0, width, width);
+
+    leafs.push(root.clone());
+
+    let mut did_split = true;
+
+    while did_split {
+        did_split = false;
+
+        let mut new_leafs: Vec<Leaf> = Vec::new();
+
+        for leaf in leafs.iter_mut() {
+            if leaf.left_child.is_none() && leaf.right_child.is_none() {
+                if leaf.width > MAX_LEAF_SIZE
+                    || leaf.height > MAX_LEAF_SIZE
+                    || rand::random::<i32>() % 100 > 25
+                {
+                    if leaf.split() {
+                        did_split = true;
+                        new_leafs.push(*leaf.left_child.as_ref().unwrap().clone());
+                        new_leafs.push(*leaf.right_child.as_ref().unwrap().clone());
+                    }
+                }
+            }
+        }
+
+        // add new leafs to leafs
+        leafs.append(&mut new_leafs);
+    }
+
+    for leaf in leafs.iter_mut() {
+        leaf.create_rooms();
+    }
+
+    /*write!(file, "Dungeon {}:\r", i).unwrap();
+    draw_rooms_to_file(&mut file, &leafs, root.width, root.height);
+    write!(file, "\r").unwrap();*/
 }
