@@ -129,6 +129,24 @@ impl Leaf {
             }
             if !self.left_child.is_none() && !self.right_child.is_none() {
                 self.create_halls();
+
+                // make sure the halls don't exceed the bounds of the leaf
+                for hall in self.halls.iter_mut() {
+                    if hall.x < self.x {
+                        hall.w -= self.x - hall.x;
+                        hall.x = self.x;
+                    }
+                    if hall.y < self.y {
+                        hall.h -= self.y - hall.y;
+                        hall.y = self.y;
+                    }
+                    if hall.x + hall.w > self.x + self.width {
+                        hall.w = self.x + self.width - hall.x;
+                    }
+                    if hall.y + hall.h > self.y + self.height {
+                        hall.h = self.y + self.height - hall.y;
+                    }
+                }
             }
         } else {
             let room_width = rand::random::<u32>() % (self.width - MIN_ROOM_SIZE) + MIN_ROOM_SIZE;
@@ -183,193 +201,46 @@ impl Leaf {
     }
 
     pub fn create_halls(&mut self) {
-        // get the rooms from the children of this node
-        let l_room: Room;
-        let r_room: Room;
+        // TODO: Change back to old algorithm
 
-        if !self.left_child.is_none() {
-            l_room = self.left_child.as_ref().unwrap().get_room().unwrap();
+        // connect rooms by adding halls which are rooms with a width of 1
+        let l_room = self.left_child.as_ref().unwrap().get_room().unwrap();
+        let r_room = self.right_child.as_ref().unwrap().get_room().unwrap();
+
+        let l_center_x = l_room.x + l_room.w / 2;
+        let l_center_y = l_room.y + l_room.h / 2;
+        let r_center_x = r_room.x + r_room.w / 2;
+        let r_center_y = r_room.y + r_room.h / 2;
+
+        if rand::random::<bool>() {
+            // first move horizontally, then vertically
+            self.halls.push(Room {
+                x: l_center_x,
+                y: l_center_y,
+                w: (r_center_x as i32 - l_center_x as i32).abs() as u32,
+                h: 1,
+            });
+            self.halls.push(Room {
+                x: r_center_x,
+                y: l_center_y,
+                w: 1,
+                h: (r_center_y as i32 - l_center_y as i32).abs() as u32,
+            });
         } else {
-            return;
+            // first move vertically, then horizontally
+            self.halls.push(Room {
+                x: l_center_x,
+                y: l_center_y,
+                w: 1,
+                h: (r_center_y as i32 - l_center_y as i32).abs() as u32,
+            });
+            self.halls.push(Room {
+                x: l_center_x,
+                y: r_center_y,
+                w: (r_center_x as i32 - l_center_x as i32).abs() as u32,
+                h: 1,
+            });
         }
-
-        if !self.right_child.is_none() {
-            r_room = self.right_child.as_ref().unwrap().get_room().unwrap();
-        } else {
-            return;
-        }
-
-        let mut halls: Vec<Room> = Vec::new();
-
-        // create rando points between the top left and bottom right corners of the rooms
-        let left_point: IVec2 = IVec2::new(
-            rand::random::<i32>() % (l_room.w as i32) + (l_room.x as i32),
-            rand::random::<i32>() % (l_room.h as i32) + (l_room.y as i32),
-        );
-
-        let right_point: IVec2 = IVec2::new(
-            rand::random::<i32>() % (r_room.w as i32) + (r_room.x as i32),
-            rand::random::<i32>() % (r_room.h as i32) + (r_room.y as i32),
-        );
-
-        let width = right_point.x - left_point.x;
-        let height = right_point.y - left_point.y;
-
-        debug!("width: {}, height: {}", width, height);
-
-        if width < 0 {
-            if height < 0 {
-                if rand::random::<bool>() {
-                    halls.push(Room {
-                        x: right_point.x.abs() as u32,
-                        y: left_point.y.abs() as u32,
-                        w: (width).abs() as u32,
-                        h: 1,
-                    });
-
-                    halls.push(Room {
-                        x: right_point.x.abs() as u32,
-                        y: right_point.y.abs() as u32,
-                        w: 1,
-                        h: (height).abs() as u32,
-                    });
-                } else {
-                    halls.push(Room {
-                        x: right_point.x.abs() as u32,
-                        y: right_point.y.abs() as u32,
-                        w: (width).abs() as u32,
-                        h: 1,
-                    });
-
-                    halls.push(Room {
-                        x: left_point.x.abs() as u32,
-                        y: right_point.y.abs() as u32,
-                        w: 1,
-                        h: (height).abs() as u32,
-                    });
-                }
-            } else if height > 0 {
-                if rand::random::<bool>() {
-                    halls.push(Room {
-                        x: right_point.x.abs() as u32,
-                        y: left_point.y.abs() as u32,
-                        w: (width).abs() as u32,
-                        h: 1,
-                    });
-
-                    halls.push(Room {
-                        x: right_point.x.abs() as u32,
-                        y: left_point.y.abs() as u32,
-                        w: 1,
-                        h: height.abs() as u32,
-                    });
-                } else {
-                    halls.push(Room {
-                        x: right_point.x.abs() as u32,
-                        y: right_point.y.abs() as u32,
-                        w: (width).abs() as u32,
-                        h: 1,
-                    });
-
-                    halls.push(Room {
-                        x: left_point.x.abs() as u32,
-                        y: left_point.y.abs() as u32,
-                        w: 1,
-                        h: height.abs() as u32,
-                    });
-                }
-            } else {
-                halls.push(Room {
-                    x: right_point.x.abs() as u32,
-                    y: left_point.y.abs() as u32,
-                    w: width.abs() as u32,
-                    h: 1,
-                });
-            }
-        } else if width > 0 {
-            if height < 0 {
-                if rand::random::<bool>() {
-                    halls.push(Room {
-                        x: left_point.x.abs() as u32,
-                        y: right_point.y.abs() as u32,
-                        w: width.abs() as u32,
-                        h: 1,
-                    });
-                    halls.push(Room {
-                        x: left_point.x.abs() as u32,
-                        y: right_point.y.abs() as u32,
-                        w: 1,
-                        h: height.abs() as u32,
-                    });
-                } else {
-                    halls.push(Room {
-                        x: left_point.x.abs() as u32,
-                        y: left_point.y.abs() as u32,
-                        w: width.abs() as u32,
-                        h: 1,
-                    });
-                    halls.push(Room {
-                        x: right_point.x.abs() as u32,
-                        y: right_point.y.abs() as u32,
-                        w: 1,
-                        h: height.abs() as u32,
-                    });
-                }
-            } else if height > 0 {
-                if rand::random::<bool>() {
-                    halls.push(Room {
-                        x: left_point.x.abs() as u32,
-                        y: left_point.y.abs() as u32,
-                        w: width.abs() as u32,
-                        h: 1,
-                    });
-                    halls.push(Room {
-                        x: right_point.x.abs() as u32,
-                        y: left_point.y.abs() as u32,
-                        w: 1,
-                        h: height.abs() as u32,
-                    });
-                } else {
-                    halls.push(Room {
-                        x: left_point.x.abs() as u32,
-                        y: right_point.y.abs() as u32,
-                        w: width.abs() as u32,
-                        h: 1,
-                    });
-                    halls.push(Room {
-                        x: left_point.x.abs() as u32,
-                        y: left_point.y.abs() as u32,
-                        w: 1,
-                        h: height.abs() as u32,
-                    });
-                }
-            } else {
-                halls.push(Room {
-                    x: left_point.x.abs() as u32,
-                    y: left_point.y.abs() as u32,
-                    w: width.abs() as u32,
-                    h: 1,
-                });
-            }
-        } else {
-            if height < 0 {
-                halls.push(Room {
-                    x: right_point.x.abs() as u32,
-                    y: right_point.y.abs() as u32,
-                    w: 1,
-                    h: height.abs() as u32,
-                })
-            } else if height > 0 {
-                halls.push(Room {
-                    x: left_point.x.abs() as u32,
-                    y: left_point.y.abs() as u32,
-                    w: 1,
-                    h: height.abs() as u32,
-                })
-            }
-        }
-
-        self.halls.append(&mut halls);
     }
 }
 
@@ -377,7 +248,9 @@ impl Leaf {
 fn draw_rooms_to_file(file: &mut std::fs::File, leafs: &Vec<Leaf>, width: u32, height: u32) {
     let mut grid = vec![vec!['#'; width as usize]; height as usize];
 
+    let mut i = 0;
     for leaf in leafs {
+        debug!("leaf {}", i);
         if leaf.room.is_some() {
             if leaf.room.is_none() {
                 continue;
@@ -401,6 +274,8 @@ fn draw_rooms_to_file(file: &mut std::fs::File, leafs: &Vec<Leaf>, width: u32, h
                 }
             }
         }
+
+        i += 1;
     }
 
     // append grid to the bottom of the file
@@ -426,7 +301,7 @@ fn gen_dungeon_stress_test_internal(width: u32, height: u32) {
 
         let start_time = Instant::now();
 
-        gen_dungeon();
+        gen_dungeon(width, height);
 
         let run_time = start_time.elapsed().as_millis();
         run_times.push(run_time.clone());
@@ -441,6 +316,7 @@ fn gen_dungeon_stress_test_internal(width: u32, height: u32) {
     let min_time = run_times[0];
     let max_time = run_times[run_times.len() - 1];
 
+    info!("Random dungeon generation stress test results for {}x{}:", width, height);
     debug!("Total time: {}ms", total_time);
     debug!("Average time: {}ms", avg_time);
     debug!("Median time: {}ms", median_time);
@@ -451,26 +327,37 @@ fn gen_dungeon_stress_test_internal(width: u32, height: u32) {
 pub fn gen_dungeon_stress_test() {
     debug!("Starting stress test");
 
-    debug!("Generating 256x256 dungeon");
+    // using 2^x values for width and height
+    // start with 128x128
+    gen_dungeon_stress_test_internal(128, 128);
     gen_dungeon_stress_test_internal(256, 256);
-
-    debug!("Generating 1024x1024 dungeon");
+    gen_dungeon_stress_test_internal(512, 512);
     gen_dungeon_stress_test_internal(1024, 1024);
-
-    debug!("Generating 4096x4096 dungeon");
+    gen_dungeon_stress_test_internal(2048, 2048);
     gen_dungeon_stress_test_internal(4096, 4096);
-
+    gen_dungeon_stress_test_internal(8192, 8192);
+    gen_dungeon_stress_test_internal(16384, 16384);
 
     // exit the program
     std::process::exit(0);
 }
 
-pub fn gen_dungeon() {
+fn print_leaf_data(leafs: &Vec<Leaf>) {
+    let mut file = std::fs::File::create(format!("leaf_data.txt")).unwrap();
+    let mut i = 0;
+    for leaf in leafs {
+        write!(file, "Leaf {}\r", i).unwrap();
+        write!(file, "{:?}\r", leaf).unwrap();
+        i += 1;
+    }
+}
+
+pub fn gen_dungeon(width: u32, height: u32) {
     let mut file = std::fs::File::create(format!("generation.txt")).unwrap();
 
     let mut leafs: Vec<Leaf> = Vec::new();
 
-    let root = Leaf::new(0, 0, 256, 256);
+    let root = Leaf::new(0, 0, width, height);
 
     leafs.push(root.clone());
 
@@ -505,8 +392,5 @@ pub fn gen_dungeon() {
         leaf.create_rooms();
     }
 
-    draw_rooms_to_file(&mut file, &leafs, root.width, root.height);
-
-    // exit
-    std::process::exit(0);
+    //draw_rooms_to_file(&mut file, &leafs, root.width, root.height);
 }
