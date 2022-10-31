@@ -47,12 +47,12 @@ pub struct Leaf {
 }
 
 pub struct Dungeon {
-    pub leafs: Vec<Leaf>,
+    pub base_map: Vec<Vec<char>>,
 }
 
 impl Dungeon {
     pub fn new() -> Self {
-        Self { leafs: Vec::new() }
+        Self { base_map: Vec::new() }
     }
 }
 
@@ -256,8 +256,7 @@ impl Leaf {
     }
 }
 
-#[allow(dead_code)]
-fn draw_rooms_to_file(file: &mut std::fs::File, leafs: &Vec<Leaf>, width: u32, height: u32) {
+fn draw_map(leafs: &Vec<Leaf>, width: u32, height: u32) -> Vec<Vec<char>> {
     let mut grid = vec![vec!['#'; width as usize]; height as usize];
 
     let mut i = 0;
@@ -290,13 +289,46 @@ fn draw_rooms_to_file(file: &mut std::fs::File, leafs: &Vec<Leaf>, width: u32, h
         i += 1;
     }
 
-    // append grid to the bottom of the file
-    for row in grid {
-        for cell in row {
-            write!(file, "{}", cell).unwrap();
+    grid
+}
+
+fn format_map(dungeon: &mut Dungeon) -> Vec<Vec<char>> {
+    let mut map = dungeon.base_map.clone();
+    for y in 0..map.len() {
+        for x in 0..map[y].len() {
+            // change char of walls to depend on surrounding tiles (left, right, up, down)
+            if map[y][x] == '#' {
+                let mut wall_char = ' ';
+                if y > 0 && map[y - 1][x] == '.' {
+                    wall_char = '▀';
+                }
+                if y < map.len() - 1 && map[y + 1][x] == '.' {
+                    wall_char = '▄';
+                }
+                if x > 0 && map[y][x - 1] == '.' {
+                    wall_char = '▐';
+                }
+                if x < map[y].len() - 1 && map[y][x + 1] == '.' {
+                    wall_char = '▌';
+                }
+                if x > 0 && y > 0 && map[y - 1][x - 1] == '.' {
+                    wall_char = '▗';
+                }
+                if x < map[y].len() - 1 && y > 0 && map[y - 1][x + 1] == '.' {
+                    wall_char = '▖';
+                }
+                if x > 0 && y < map.len() - 1 && map[y + 1][x - 1] == '.' {
+                    wall_char = '▝';
+                }
+                if x < map[y].len() - 1 && y < map.len() - 1 && map[y + 1][x + 1] == '.' {
+                    wall_char = '▘';
+                }
+                map[y][x] = wall_char;
+            }
         }
-        write!(file, "\r").unwrap();
     }
+
+    map
 }
 
 fn gen_dungeon_stress_test_internal(width: u32, height: u32) {
@@ -436,7 +468,17 @@ pub fn gen_dungeon(
         leaf.create_rooms();
     }
 
-    dungeon.leafs = leafs.clone();
+    dungeon.base_map = draw_map(&leafs, root.width, root.height);
+    format_map(dungeon.as_mut()).clone_into(&mut dungeon.base_map);
+
+
+    // print to file
+    for y in 0..dungeon.base_map.len() {
+        for x in 0..dungeon.base_map[y].len() {
+            write!(file, "{}", dungeon.base_map[y][x]).unwrap();
+        }
+        write!(file, "\r").unwrap();
+    }
 
     // deallocate leafs
     leafs.clear();
