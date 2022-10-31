@@ -48,11 +48,17 @@ pub struct Leaf {
 
 pub struct Dungeon {
     pub base_map: Vec<Vec<char>>,
+    width: u32,
+    height: u32,
 }
 
 impl Dungeon {
     pub fn new() -> Self {
-        Self { base_map: Vec::new() }
+        Self { 
+            base_map: Vec::new(),
+            width: 128,
+            height: 128
+        }
     }
 }
 
@@ -344,7 +350,7 @@ fn gen_dungeon_stress_test_internal(width: u32, height: u32) {
     while i < max {
         let start_time = Instant::now();
 
-        //gen_dungeon(width, height);
+        gen_dungeon_internal(width, height);
 
         let run_time = start_time.elapsed().as_millis();
         run_times.push(run_time.clone());
@@ -395,42 +401,7 @@ fn print_leaf_data(leafs: &Vec<Leaf>) {
     }
 }
 
-//pub fn gen_dungeon(width: u32, height: u32) {
-pub fn gen_dungeon(
-    mut commands: Commands,
-    mut dungeon: ResMut<Dungeon>,
-    assets: Res<MyAssets>,
-) {
-    commands
-        .spawn_bundle(
-            // Create a TextBundle that has a Text with a single section.
-            TextBundle::from_section(
-                // Accepts a `String` or any type that converts into a `String`, such as `&str`
-                "Loading...".to_string(),
-                TextStyle {
-                    font: assets.font.clone(),
-                    font_size: 100.0,
-                    color: Color::WHITE,
-                },
-            ) // Set the alignment of the Text
-                .with_text_alignment(TextAlignment::TOP_CENTER)
-                // Set the style of the TextBundle itself.
-                .with_style(Style {
-                    align_self: AlignSelf::Center,
-                    position_type: PositionType::Absolute,
-                    position: UiRect {
-                        top: Val::Px(5.0),
-                        left: Val::Px(15.0),
-                        ..default()
-                    },
-                    ..default()
-                }),
-        )
-        .insert(LoadingText);
-
-
-    let mut file = std::fs::File::create(format!("generation.txt")).unwrap();
-
+fn gen_dungeon_internal(width: u32, height: u32) -> Vec<Leaf> {
     let mut leafs: Vec<Leaf> = Vec::new();
 
     let root = Leaf::new(0, 0, 128, 128);
@@ -468,20 +439,52 @@ pub fn gen_dungeon(
         leaf.create_rooms();
     }
 
+    leafs
+}
+
+//pub fn gen_dungeon(width: u32, height: u32) {
+pub fn gen_dungeon_system(
+    mut commands: Commands,
+    mut dungeon: ResMut<Dungeon>,
+    assets: Res<MyAssets>,
+) {
+    commands
+        .spawn_bundle(
+            // Create a TextBundle that has a Text with a single section.
+            TextBundle::from_section(
+                // Accepts a `String` or any type that converts into a `String`, such as `&str`
+                "Loading...".to_string(),
+                TextStyle {
+                    font: assets.font.clone(),
+                    font_size: 100.0,
+                    color: Color::WHITE,
+                },
+            ) // Set the alignment of the Text
+                .with_text_alignment(TextAlignment::TOP_CENTER)
+                // Set the style of the TextBundle itself.
+                .with_style(Style {
+                    align_self: AlignSelf::Center,
+                    position_type: PositionType::Absolute,
+                    position: UiRect {
+                        top: Val::Px(5.0),
+                        left: Val::Px(15.0),
+                        ..default()
+                    },
+                    ..default()
+                }),
+        )
+        .insert(LoadingText);
+
+    let leafs = gen_dungeon_internal(dungeon.width, dungeon.height);
+
+    let root = leafs[0].clone();
+
     dungeon.base_map = draw_map(&leafs, root.width, root.height);
     format_map(dungeon.as_mut()).clone_into(&mut dungeon.base_map);
-
-
-    // print to file
-    for y in 0..dungeon.base_map.len() {
-        for x in 0..dungeon.base_map[y].len() {
-            write!(file, "{}", dungeon.base_map[y][x]).unwrap();
-        }
-        write!(file, "\r").unwrap();
-    }
 
     // deallocate leafs
     leafs.clear();
 
+    //let mut file = std::fs::File::create(format!("generation.txt")).unwrap();
     //draw_rooms_to_file(&mut file, &leafs, root.width, root.height);
 }
