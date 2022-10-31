@@ -483,7 +483,7 @@ pub fn gen_dungeon_system(
     format_map(dungeon.as_mut()).clone_into(&mut dungeon.base_map);
 
     // deallocate leafs
-    leafs.clear();
+    //leafs.clear();
 
     //let mut file = std::fs::File::create(format!("generation.txt")).unwrap();
     //draw_rooms_to_file(&mut file, &leafs, root.width, root.height);
