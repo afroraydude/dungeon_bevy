@@ -7,6 +7,8 @@ use bevy::{math::Vec3Swizzles, utils::HashSet};
 use noise::utils::{NoiseMapBuilder, PlaneMapBuilder};
 use crate::resources::{CHUNK_SIZE, RENDER_CHUNK_SIZE, RENDER_SIZE, RenderTimer, TILE_SIZE, WORLD_SIZE, WorldMap};
 
+use super::dungeon_gen::Dungeon;
+
 #[derive(Default, Debug)]
 pub struct ChunkManager {
     pub spawned_chunks: HashSet<IVec2>,
@@ -26,7 +28,7 @@ pub fn get_center_of_world() -> Vec2 {
     Vec2::new(x, y)
 }
 
-fn spawn_chunk(commands: &mut Commands, assets: &Res<MyAssets>, chunk_pos: IVec2, world_map: &Res<WorldMap>) {
+fn spawn_chunk(commands: &mut Commands, assets: &Res<MyAssets>, chunk_pos: IVec2, world_map: &Res<Dungeon>) {
 
     let tilemap_entity = commands.spawn().id();
     let mut tile_storage = TileStorage::empty(CHUNK_SIZE.into());
@@ -47,7 +49,7 @@ fn spawn_chunk(commands: &mut Commands, assets: &Res<MyAssets>, chunk_pos: IVec2
                 .insert_bundle(TileBundle {
                     position: tile_pos,
                     tilemap_id: TilemapId(tilemap_entity),
-                    texture: TileTexture(world_map.map[tile_world_pos.x as usize][tile_world_pos.y as usize]),
+                    texture: TileTexture(world_map.tile_map[tile_world_pos.x as usize][tile_world_pos.y as usize]),
                     ..Default::default()
                 })
                 .id();
@@ -143,7 +145,7 @@ pub fn spawn_chunks_around_camera(
     assets: Res<MyAssets>,
     camera_query: Query<&Transform, With<Camera>>,
     mut chunk_manager: ResMut<ChunkManager>,
-    world_map: Res<WorldMap>,
+    world_map: Res<Dungeon>,
     time: Res<Time>,
     mut timer: ResMut<RenderTimer>
 ) {

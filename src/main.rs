@@ -9,6 +9,7 @@ use bevy_inspector_egui::{WorldInspectorPlugin};
 use plugins::dungeon_gen::DungeonGenPlugin;
 use plugins::game_state_plugin::GameStatePlugin;
 use plugins::main_menu::MainMenuPlugin;
+use plugins::tilemap_debug::TilemapDebugPlugin;
 use resources::MyStates;
 
 use crate::components::{BoxCollider, Collision, LoadingText, Unknown};
@@ -70,6 +71,7 @@ fn main() {
         .add_plugin(GameStatePlugin)
         .add_plugin(LogDiagnosticsPlugin::default())
         .add_plugin(DungeonGenPlugin)
+        .add_plugin(TilemapDebugPlugin)
         .add_plugin(MainMenuPlugin)
         //.add_plugin(WorldGenerationPlugin)
         //.add_plugin(FrameTimeDiagnosticsPlugin::default())

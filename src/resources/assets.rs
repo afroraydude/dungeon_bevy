@@ -13,6 +13,10 @@ pub struct MyAssets {
     #[asset(path = "TX Tileset Grass.png")]
     pub grasses_raw: Handle<Image>,
 
+    #[asset(texture_atlas(tile_size_x = 32., tile_size_y = 32., columns = 23, rows = 40))]
+    #[asset(path = "TXTilemap.png")]
+    pub base_tilemap: Handle<TextureAtlas>,
+
     #[asset(path = "font.ttf")]
     pub font: Handle<Font>,
 }

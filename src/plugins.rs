@@ -4,3 +4,4 @@ pub mod game_state_plugin;
 pub mod world_generation;
 pub mod main_menu;
 pub mod dungeon_gen;
+pub mod tilemap_debug;

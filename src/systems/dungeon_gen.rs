@@ -48,7 +48,7 @@ pub struct Leaf {
 }
 
 pub struct Dungeon {
-    pub base_map: Vec<Vec<char>>,
+    pub tile_map: Vec<Vec<u32>>,
     width: u32,
     height: u32,
 }
@@ -56,9 +56,9 @@ pub struct Dungeon {
 impl Dungeon {
     pub fn new() -> Self {
         Self {
-            base_map: Vec::new(),
             width: 128,
             height: 128,
+            tile_map: Vec::new(),
         }
     }
 }
@@ -296,8 +296,8 @@ fn draw_map(leafs: &Vec<Leaf>, width: u32, height: u32) -> Vec<Vec<char>> {
     grid
 }
 
-fn format_map(dungeon: &mut Dungeon) -> Vec<Vec<char>> {
-    let mut map = dungeon.base_map.clone();
+fn format_map(base_map: Vec<Vec<char>>) -> Vec<Vec<char>> {
+    let mut map = base_map.clone();
     for y in 0..map.len() {
         for x in 0..map[y].len() {
             // change char of walls to depend on surrounding tiles (left, right, up, down)
@@ -451,6 +451,23 @@ fn format_map(dungeon: &mut Dungeon) -> Vec<Vec<char>> {
     map
 }
 
+fn base_map_to_tile_map(map: Vec<Vec<char>>) -> Vec<Vec<u32>> {
+    let mut tile_map = Vec::new();
+    for y in 0..map.len() {
+        let mut row = Vec::new();
+        for x in 0..map[y].len() {
+            let tile = match map[y][x] {
+                '.' => 0,
+                _ => 1, // all walls for now will be the same
+            };
+            row.push(tile);
+        }
+        tile_map.push(row);
+    }
+
+    tile_map
+}
+
 fn gen_dungeon_stress_test_internal(width: u32, height: u32) {
     //let min_room_size = UVec2::new(4, 4);
     //let max_room_size = UVec2::new(16, 16);
@@ -490,6 +507,7 @@ fn gen_dungeon_stress_test_internal(width: u32, height: u32) {
     debug!("Max time: {}ms", max_time);
 }
 
+#[allow(dead_code)]
 pub fn gen_dungeon_stress_test(mut commands: Commands, mut assets: ResMut<MyAssets>) {
     print_pc_data_to_debug();
     debug!("Starting stress test");
@@ -591,8 +609,9 @@ pub fn gen_dungeon_system(
         )
         .insert(LoadingText);
 
-    dungeon.base_map = gen_dungeon_internal(dungeon.width, dungeon.height);
-    format_map(dungeon.as_mut()).clone_into(&mut dungeon.base_map);
+    let mut base_map = gen_dungeon_internal(dungeon.width, dungeon.height);
+    format_map(base_map.clone()).clone_into(&mut base_map);
+    dungeon.tile_map = base_map_to_tile_map(base_map);
 
     // deallocate leafs
     //leafs.clear();
@@ -602,7 +621,7 @@ pub fn gen_dungeon_system(
     // draw to file
     for y in 0..dungeon.height {
         for x in 0..dungeon.width {
-            write!(file, "{}", dungeon.base_map[y as usize][x as usize]).unwrap();
+            write!(file, "{}", dungeon.tile_map[y as usize][x as usize]).unwrap();
         }
         write!(file, "\r").unwrap();
     }
