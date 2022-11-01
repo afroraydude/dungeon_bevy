@@ -1,6 +1,7 @@
 use std::{io::Write, time::Instant};
 
 use crate::components::LoadingText;
+use crate::resources::WORLD_SIZE;
 use crate::resources::assets::MyAssets;
 use crate::systems::print_pc_data_to_debug;
 use bevy::prelude::*;
@@ -56,10 +57,15 @@ pub struct Dungeon {
 impl Dungeon {
     pub fn new() -> Self {
         Self {
-            width: 128,
-            height: 128,
+            width: WORLD_SIZE.x,
+            height: WORLD_SIZE.y,
             tile_map: Vec::new(),
         }
+    }
+
+    pub fn change_world_size(&mut self, new_size: UVec2) {
+        self.width = new_size.x;
+        self.height = new_size.y;
     }
 }
 
