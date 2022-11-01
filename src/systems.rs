@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use crate::{BoxCollider, Collision, LoadingText, MyAssets, MyStates};
+use sysinfo::{NetworkExt, NetworksExt, ProcessExt, System, SystemExt};
 
 pub mod people;
 pub mod player;
@@ -55,4 +56,19 @@ pub fn remove_loading_text(
     for (entity, _) in query.iter_mut() {
         commands.entity(entity).despawn_recursive();
     }
+}
+
+pub fn print_pc_data_to_debug() {
+    // grabs the cpu, ram, and gpu data
+    let mut sys = System::new_all();
+
+    sys.refresh_all();
+
+    debug!("System data:");
+    debug!("System name:             {:?}", sys.name());
+    debug!("System kernel version:   {:?}", sys.kernel_version());
+    debug!("System OS version:       {:?}", sys.long_os_version());
+    debug!("System host name:        {:?}", sys.host_name());
+    debug!("NB CPUs: {}", sys.cpus().len());
+    debug!("total memory: {} bytes", sys.total_memory());
 }

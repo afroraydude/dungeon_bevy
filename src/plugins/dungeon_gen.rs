@@ -10,7 +10,7 @@ impl Plugin for DungeonGenPlugin {
         app.insert_resource(Dungeon::new());
         app.add_system_set(
             SystemSet::on_enter(MyStates::DungeonGeneration)
-              .with_system(gen_dungeon_stress_test),
+              .with_system(gen_dungeon_system),
         );
     }
 

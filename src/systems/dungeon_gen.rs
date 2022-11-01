@@ -1,9 +1,10 @@
 use std::{io::Write, time::Instant};
 
-use bevy::prelude::*;
-use bevy::utils::tracing::field::debug;
 use crate::components::LoadingText;
 use crate::resources::assets::MyAssets;
+use crate::systems::print_pc_data_to_debug;
+use bevy::prelude::*;
+use bevy::utils::tracing::field::debug;
 
 /*
 Resources
@@ -54,10 +55,10 @@ pub struct Dungeon {
 
 impl Dungeon {
     pub fn new() -> Self {
-        Self { 
+        Self {
             base_map: Vec::new(),
             width: 128,
-            height: 128
+            height: 128,
         }
     }
 }
@@ -267,7 +268,6 @@ fn draw_map(leafs: &Vec<Leaf>, width: u32, height: u32) -> Vec<Vec<char>> {
 
     let mut i = 0;
     for leaf in leafs {
-        debug!("leaf {}", i);
         if leaf.room.is_some() {
             if leaf.room.is_none() {
                 continue;
@@ -283,8 +283,6 @@ fn draw_map(leafs: &Vec<Leaf>, width: u32, height: u32) -> Vec<Vec<char>> {
 
         // draw halls with # as walls and . as floor
         for hall in &leaf.halls {
-            debug!("x: {}, y: {}, w: {}, h: {}", hall.x, hall.y, hall.w, hall.h);
-            debug!("x + w: {}, y + h: {}", hall.x + hall.w, hall.y + hall.h);
             for x in hall.x..hall.x + hall.w {
                 for y in hall.y..hall.y + hall.h {
                     grid[y as usize][x as usize] = '.';
@@ -304,30 +302,146 @@ fn format_map(dungeon: &mut Dungeon) -> Vec<Vec<char>> {
         for x in 0..map[y].len() {
             // change char of walls to depend on surrounding tiles (left, right, up, down)
             if map[y][x] == '#' {
-                let mut wall_char = ' ';
-                if y > 0 && map[y - 1][x] == '.' {
-                    wall_char = '▀';
-                }
-                if y < map.len() - 1 && map[y + 1][x] == '.' {
-                    wall_char = '▄';
-                }
-                if x > 0 && map[y][x - 1] == '.' {
-                    wall_char = '▐';
-                }
-                if x < map[y].len() - 1 && map[y][x + 1] == '.' {
-                    wall_char = '▌';
-                }
-                if x > 0 && y > 0 && map[y - 1][x - 1] == '.' {
-                    wall_char = '▗';
-                }
-                if x < map[y].len() - 1 && y > 0 && map[y - 1][x + 1] == '.' {
-                    wall_char = '▖';
-                }
-                if x > 0 && y < map.len() - 1 && map[y + 1][x - 1] == '.' {
-                    wall_char = '▝';
-                }
-                if x < map[y].len() - 1 && y < map.len() - 1 && map[y + 1][x + 1] == '.' {
-                    wall_char = '▘';
+                let mut wall_char = '#';
+                // if not a corner block
+                if x > 0 && x < map[y].len() - 1 && y > 0 && y < map.len() - 1 {
+                    // if there is a wall to the left
+                    if map[y][x - 1] != '.' {
+                        // if there is also a wall to the right
+                        if map[y][x + 1] != '.' {
+                            // if there is also a wall above
+                            if map[y - 1][x] != '.' {
+                                // if there is also a wall below
+                                if map[y + 1][x] != '.' {
+                                    wall_char = '#';
+                                } else {
+                                    wall_char = '┴';
+                                }
+                            } else {
+                                // if there is also a wall below
+                                if map[y + 1][x] != '.' {
+                                    wall_char = '┬';
+                                } else {
+                                    wall_char = '│';
+                                }
+                            }
+                        } else {
+                            // if there is also a wall above
+                            if map[y - 1][x] != '.' {
+                                // if there is also a wall below
+                                if map[y + 1][x] != '.' {
+                                    wall_char = '┤';
+                                } else {
+                                    wall_char = '┘';
+                                }
+                            } else {
+                                // if there is also a wall below
+                                if map[y + 1][x] != '.' {
+                                    wall_char = '┐';
+                                } else {
+                                    wall_char = '└';
+                                }
+                            }
+                        }
+                        // else if there is a wall to the right
+                    } else if map[y][x + 1] != '.' {
+                        // if there is also a wall above
+                        if map[y - 1][x] != '.' {
+                            // if there is also a wall below
+                            if map[y + 1][x] != '.' {
+                                wall_char = '├';
+                            } else {
+                                wall_char = '┌';
+                            }
+                        } else {
+                            // if there is also a wall below
+                            if map[y + 1][x] != '.' {
+                                wall_char = '└';
+                            } else {
+                                wall_char = '─';
+                            }
+                        }
+                        // else if there is a wall above
+                    } else if map[y - 1][x] != '.' {
+                        // if there is also a wall below
+                        if map[y + 1][x] != '.' {
+                            wall_char = '│';
+                        } else {
+                            wall_char = '┴';
+                        }
+                        // else if there is a wall below
+                    } else if map[y + 1][x] != '.' {
+                        wall_char = '┬';
+                    }
+                } else {
+                    // if top left
+                    if x == 0 && y == 0 {
+                        // if there is a wall to the right
+                        if map[y][x + 1] != '.' {
+                            // if there is also a wall below
+                            if map[y + 1][x] != '.' {
+                                wall_char = '┐';
+                            } else {
+                                wall_char = '└';
+                            }
+                            // else if there is a wall below
+                        } else if map[y + 1][x] != '.' {
+                            wall_char = '┘';
+                        } else {
+                            wall_char = '└';
+                        }
+                        // else if top right
+                    }
+                    if x == map[y].len() - 1 && y == 0 {
+                        // if there is a wall to the left
+                        if map[y][x - 1] != '.' {
+                            // if there is also a wall below
+                            if map[y + 1][x] != '.' {
+                                wall_char = '┌';
+                            } else {
+                                wall_char = '┘';
+                            }
+                            // else if there is a wall below
+                        } else if map[y + 1][x] != '.' {
+                            wall_char = '└';
+                        } else {
+                            wall_char = '┘';
+                        }
+                        // else if bottom left
+                    }
+                    if x == 0 && y == map.len() - 1 {
+                        // if there is a wall to the right
+                        if map[y][x + 1] != '.' {
+                            // if there is also a wall above
+                            if map[y - 1][x] != '.' {
+                                wall_char = '┘';
+                            } else {
+                                wall_char = '┌';
+                            }
+                            // else if there is a wall above
+                        } else if map[y - 1][x] != '.' {
+                            wall_char = '┐';
+                        } else {
+                            wall_char = '┌';
+                        }
+                        // else if bottom right
+                    }
+                    if x == map[y].len() - 1 && y == map.len() - 1 {
+                        // if there is a wall to the left
+                        if map[y][x - 1] != '.' {
+                            // if there is also a wall above
+                            if map[y - 1][x] != '.' {
+                                wall_char = '└';
+                            } else {
+                                wall_char = '┐';
+                            }
+                            // else if there is a wall above
+                        } else if map[y - 1][x] != '.' {
+                            wall_char = '┌';
+                        } else {
+                            wall_char = '┐';
+                        }
+                    }
                 }
                 map[y][x] = wall_char;
             }
@@ -365,7 +479,10 @@ fn gen_dungeon_stress_test_internal(width: u32, height: u32) {
     let min_time = run_times[0];
     let max_time = run_times[run_times.len() - 1];
 
-    info!("Random dungeon generation stress test results for {}x{}:", width, height);
+    info!(
+        "Random dungeon generation stress test results for {}x{}:",
+        width, height
+    );
     debug!("Total time: {}ms", total_time);
     debug!("Average time: {}ms", avg_time);
     debug!("Median time: {}ms", median_time);
@@ -373,7 +490,8 @@ fn gen_dungeon_stress_test_internal(width: u32, height: u32) {
     debug!("Max time: {}ms", max_time);
 }
 
-pub fn gen_dungeon_stress_test() {
+pub fn gen_dungeon_stress_test(mut commands: Commands, mut assets: ResMut<MyAssets>) {
+    print_pc_data_to_debug();
     debug!("Starting stress test");
 
     // using 2^x values for width and height
@@ -384,8 +502,6 @@ pub fn gen_dungeon_stress_test() {
     gen_dungeon_stress_test_internal(1024, 1024);
     gen_dungeon_stress_test_internal(2048, 2048);
     gen_dungeon_stress_test_internal(4096, 4096);
-    gen_dungeon_stress_test_internal(8192, 8192);
-    gen_dungeon_stress_test_internal(16384, 16384);
 
     // exit the program
     std::process::exit(0);
@@ -401,10 +517,10 @@ fn print_leaf_data(leafs: &Vec<Leaf>) {
     }
 }
 
-fn gen_dungeon_internal(width: u32, height: u32) -> Vec<Leaf> {
+fn gen_dungeon_internal(width: u32, height: u32) -> Vec<Vec<char>> {
     let mut leafs: Vec<Leaf> = Vec::new();
 
-    let root = Leaf::new(0, 0, 128, 128);
+    let root = Leaf::new(0, 0, width, height);
 
     leafs.push(root.clone());
 
@@ -439,7 +555,7 @@ fn gen_dungeon_internal(width: u32, height: u32) -> Vec<Leaf> {
         leaf.create_rooms();
     }
 
-    leafs
+    draw_map(&leafs, root.width, root.height)
 }
 
 //pub fn gen_dungeon(width: u32, height: u32) {
@@ -460,31 +576,37 @@ pub fn gen_dungeon_system(
                     color: Color::WHITE,
                 },
             ) // Set the alignment of the Text
-                .with_text_alignment(TextAlignment::TOP_CENTER)
-                // Set the style of the TextBundle itself.
-                .with_style(Style {
-                    align_self: AlignSelf::Center,
-                    position_type: PositionType::Absolute,
-                    position: UiRect {
-                        top: Val::Px(5.0),
-                        left: Val::Px(15.0),
-                        ..default()
-                    },
+            .with_text_alignment(TextAlignment::TOP_CENTER)
+            // Set the style of the TextBundle itself.
+            .with_style(Style {
+                align_self: AlignSelf::Center,
+                position_type: PositionType::Absolute,
+                position: UiRect {
+                    top: Val::Px(5.0),
+                    left: Val::Px(15.0),
                     ..default()
-                }),
+                },
+                ..default()
+            }),
         )
         .insert(LoadingText);
 
-    let leafs = gen_dungeon_internal(dungeon.width, dungeon.height);
-
-    let root = leafs[0].clone();
-
-    dungeon.base_map = draw_map(&leafs, root.width, root.height);
+    dungeon.base_map = gen_dungeon_internal(dungeon.width, dungeon.height);
     format_map(dungeon.as_mut()).clone_into(&mut dungeon.base_map);
 
     // deallocate leafs
     //leafs.clear();
 
-    //let mut file = std::fs::File::create(format!("generation.txt")).unwrap();
-    //draw_rooms_to_file(&mut file, &leafs, root.width, root.height);
+    let mut file = std::fs::File::create(format!("generation.txt")).unwrap();
+
+    // draw to file
+    for y in 0..dungeon.height {
+        for x in 0..dungeon.width {
+            write!(file, "{}", dungeon.base_map[y as usize][x as usize]).unwrap();
+        }
+        write!(file, "\r").unwrap();
+    }
+
+    // exit the program
+    std::process::exit(0);
 }
