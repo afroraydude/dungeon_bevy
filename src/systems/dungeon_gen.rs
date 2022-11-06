@@ -67,6 +67,252 @@ impl Dungeon {
         self.width = new_size.x;
         self.height = new_size.y;
     }
+
+    pub fn gen_dungeon_base_map(width: u32, height: u32) -> Vec<Vec<char>> {
+        let mut leafs: Vec<Leaf> = Vec::new();
+    
+        let root = Leaf::new(0, 0, width, height);
+    
+        leafs.push(root.clone());
+    
+        let mut did_split = true;
+    
+        while did_split {
+            did_split = false;
+    
+            let mut new_leafs: Vec<Leaf> = Vec::new();
+    
+            for leaf in leafs.iter_mut() {
+                if leaf.left_child.is_none() && leaf.right_child.is_none() {
+                    if leaf.width > MAX_LEAF_SIZE
+                        || leaf.height > MAX_LEAF_SIZE
+                        || rand::random::<i32>() % 100 > 25
+                    {
+                        if leaf.split() {
+                            did_split = true;
+                            new_leafs.push(*leaf.left_child.as_ref().unwrap().clone());
+                            new_leafs.push(*leaf.right_child.as_ref().unwrap().clone());
+                        }
+                    }
+                }
+            }
+    
+            // add new leafs to leafs
+            leafs.append(&mut new_leafs);
+        }
+    
+        // create rooms
+        for leaf in leafs.iter_mut() {
+            leaf.create_rooms();
+        }
+    
+        Self::draw_map(&leafs, root.width, root.height)
+    }
+
+    fn draw_map(leafs: &Vec<Leaf>, width: u32, height: u32) -> Vec<Vec<char>> {
+        let mut grid = vec![vec!['#'; width as usize]; height as usize];
+    
+        let mut i = 0;
+        for leaf in leafs {
+            if leaf.room.is_some() {
+                if leaf.room.is_none() {
+                    continue;
+                }
+                let room = leaf.room.as_ref().unwrap();
+                // draw room with # as walls and . as floor
+                for x in room.x..(room.x + room.w) {
+                    for y in room.y..room.y + room.h {
+                        grid[y as usize][x as usize] = '.';
+                    }
+                }
+            }
+    
+            // draw halls with # as walls and . as floor
+            for hall in &leaf.halls {
+                for x in hall.x..hall.x + hall.w {
+                    for y in hall.y..hall.y + hall.h {
+                        grid[y as usize][x as usize] = '.';
+                    }
+                }
+            }
+    
+            i += 1;
+        }
+    
+        grid
+    }
+
+    fn format_map(base_map: Vec<Vec<char>>) -> Vec<Vec<char>> {
+        let mut map = base_map.clone();
+        for y in 0..map.len() {
+            for x in 0..map[y].len() {
+                // change char of walls to depend on surrounding tiles (left, right, up, down)
+                if map[y][x] == '#' {
+                    let mut wall_char = '#';
+                    // if not a corner block
+                    if x > 0 && x < map[y].len() - 1 && y > 0 && y < map.len() - 1 {
+                        // if there is a wall to the left
+                        if map[y][x - 1] != '.' {
+                            // if there is also a wall to the right
+                            if map[y][x + 1] != '.' {
+                                // if there is also a wall above
+                                if map[y - 1][x] != '.' {
+                                    // if there is also a wall below
+                                    if map[y + 1][x] != '.' {
+                                        wall_char = '#';
+                                    } else {
+                                        wall_char = '┴';
+                                    }
+                                } else {
+                                    // if there is also a wall below
+                                    if map[y + 1][x] != '.' {
+                                        wall_char = '┬';
+                                    } else {
+                                        wall_char = '│';
+                                    }
+                                }
+                            } else {
+                                // if there is also a wall above
+                                if map[y - 1][x] != '.' {
+                                    // if there is also a wall below
+                                    if map[y + 1][x] != '.' {
+                                        wall_char = '┤';
+                                    } else {
+                                        wall_char = '┘';
+                                    }
+                                } else {
+                                    // if there is also a wall below
+                                    if map[y + 1][x] != '.' {
+                                        wall_char = '┐';
+                                    } else {
+                                        wall_char = '└';
+                                    }
+                                }
+                            }
+                            // else if there is a wall to the right
+                        } else if map[y][x + 1] != '.' {
+                            // if there is also a wall above
+                            if map[y - 1][x] != '.' {
+                                // if there is also a wall below
+                                if map[y + 1][x] != '.' {
+                                    wall_char = '├';
+                                } else {
+                                    wall_char = '┌';
+                                }
+                            } else {
+                                // if there is also a wall below
+                                if map[y + 1][x] != '.' {
+                                    wall_char = '└';
+                                } else {
+                                    wall_char = '─';
+                                }
+                            }
+                            // else if there is a wall above
+                        } else if map[y - 1][x] != '.' {
+                            // if there is also a wall below
+                            if map[y + 1][x] != '.' {
+                                wall_char = '│';
+                            } else {
+                                wall_char = '┴';
+                            }
+                            // else if there is a wall below
+                        } else if map[y + 1][x] != '.' {
+                            wall_char = '┬';
+                        }
+                    } else {
+                        // if top left
+                        if x == 0 && y == 0 {
+                            // if there is a wall to the right
+                            if map[y][x + 1] != '.' {
+                                // if there is also a wall below
+                                if map[y + 1][x] != '.' {
+                                    wall_char = '┐';
+                                } else {
+                                    wall_char = '└';
+                                }
+                                // else if there is a wall below
+                            } else if map[y + 1][x] != '.' {
+                                wall_char = '┘';
+                            } else {
+                                wall_char = '└';
+                            }
+                            // else if top right
+                        }
+                        if x == map[y].len() - 1 && y == 0 {
+                            // if there is a wall to the left
+                            if map[y][x - 1] != '.' {
+                                // if there is also a wall below
+                                if map[y + 1][x] != '.' {
+                                    wall_char = '┌';
+                                } else {
+                                    wall_char = '┘';
+                                }
+                                // else if there is a wall below
+                            } else if map[y + 1][x] != '.' {
+                                wall_char = '└';
+                            } else {
+                                wall_char = '┘';
+                            }
+                            // else if bottom left
+                        }
+                        if x == 0 && y == map.len() - 1 {
+                            // if there is a wall to the right
+                            if map[y][x + 1] != '.' {
+                                // if there is also a wall above
+                                if map[y - 1][x] != '.' {
+                                    wall_char = '┘';
+                                } else {
+                                    wall_char = '┌';
+                                }
+                                // else if there is a wall above
+                            } else if map[y - 1][x] != '.' {
+                                wall_char = '┐';
+                            } else {
+                                wall_char = '┌';
+                            }
+                            // else if bottom right
+                        }
+                        if x == map[y].len() - 1 && y == map.len() - 1 {
+                            // if there is a wall to the left
+                            if map[y][x - 1] != '.' {
+                                // if there is also a wall above
+                                if map[y - 1][x] != '.' {
+                                    wall_char = '└';
+                                } else {
+                                    wall_char = '┐';
+                                }
+                                // else if there is a wall above
+                            } else if map[y - 1][x] != '.' {
+                                wall_char = '┌';
+                            } else {
+                                wall_char = '┐';
+                            }
+                        }
+                    }
+                    map[y][x] = wall_char;
+                }
+            }
+        }
+    
+        map
+    }
+
+    pub(crate) fn base_map_to_tile_map(&mut self, map: Vec<Vec<char>>) {
+        let mut tile_map = Vec::new();
+        for y in 0..map.len() {
+            let mut row = Vec::new();
+            for x in 0..map[y].len() {
+                let tile = match map[y][x] {
+                    '.' => 0,
+                    _ => 1, // all walls for now will be the same
+                };
+                row.push(tile);
+            }
+            tile_map.push(row);
+        }
+    
+        self.tile_map = tile_map;
+    }
 }
 
 impl Leaf {
@@ -269,211 +515,6 @@ impl Leaf {
     }
 }
 
-fn draw_map(leafs: &Vec<Leaf>, width: u32, height: u32) -> Vec<Vec<char>> {
-    let mut grid = vec![vec!['#'; width as usize]; height as usize];
-
-    let mut i = 0;
-    for leaf in leafs {
-        if leaf.room.is_some() {
-            if leaf.room.is_none() {
-                continue;
-            }
-            let room = leaf.room.as_ref().unwrap();
-            // draw room with # as walls and . as floor
-            for x in room.x..(room.x + room.w) {
-                for y in room.y..room.y + room.h {
-                    grid[y as usize][x as usize] = '.';
-                }
-            }
-        }
-
-        // draw halls with # as walls and . as floor
-        for hall in &leaf.halls {
-            for x in hall.x..hall.x + hall.w {
-                for y in hall.y..hall.y + hall.h {
-                    grid[y as usize][x as usize] = '.';
-                }
-            }
-        }
-
-        i += 1;
-    }
-
-    grid
-}
-
-fn format_map(base_map: Vec<Vec<char>>) -> Vec<Vec<char>> {
-    let mut map = base_map.clone();
-    for y in 0..map.len() {
-        for x in 0..map[y].len() {
-            // change char of walls to depend on surrounding tiles (left, right, up, down)
-            if map[y][x] == '#' {
-                let mut wall_char = '#';
-                // if not a corner block
-                if x > 0 && x < map[y].len() - 1 && y > 0 && y < map.len() - 1 {
-                    // if there is a wall to the left
-                    if map[y][x - 1] != '.' {
-                        // if there is also a wall to the right
-                        if map[y][x + 1] != '.' {
-                            // if there is also a wall above
-                            if map[y - 1][x] != '.' {
-                                // if there is also a wall below
-                                if map[y + 1][x] != '.' {
-                                    wall_char = '#';
-                                } else {
-                                    wall_char = '┴';
-                                }
-                            } else {
-                                // if there is also a wall below
-                                if map[y + 1][x] != '.' {
-                                    wall_char = '┬';
-                                } else {
-                                    wall_char = '│';
-                                }
-                            }
-                        } else {
-                            // if there is also a wall above
-                            if map[y - 1][x] != '.' {
-                                // if there is also a wall below
-                                if map[y + 1][x] != '.' {
-                                    wall_char = '┤';
-                                } else {
-                                    wall_char = '┘';
-                                }
-                            } else {
-                                // if there is also a wall below
-                                if map[y + 1][x] != '.' {
-                                    wall_char = '┐';
-                                } else {
-                                    wall_char = '└';
-                                }
-                            }
-                        }
-                        // else if there is a wall to the right
-                    } else if map[y][x + 1] != '.' {
-                        // if there is also a wall above
-                        if map[y - 1][x] != '.' {
-                            // if there is also a wall below
-                            if map[y + 1][x] != '.' {
-                                wall_char = '├';
-                            } else {
-                                wall_char = '┌';
-                            }
-                        } else {
-                            // if there is also a wall below
-                            if map[y + 1][x] != '.' {
-                                wall_char = '└';
-                            } else {
-                                wall_char = '─';
-                            }
-                        }
-                        // else if there is a wall above
-                    } else if map[y - 1][x] != '.' {
-                        // if there is also a wall below
-                        if map[y + 1][x] != '.' {
-                            wall_char = '│';
-                        } else {
-                            wall_char = '┴';
-                        }
-                        // else if there is a wall below
-                    } else if map[y + 1][x] != '.' {
-                        wall_char = '┬';
-                    }
-                } else {
-                    // if top left
-                    if x == 0 && y == 0 {
-                        // if there is a wall to the right
-                        if map[y][x + 1] != '.' {
-                            // if there is also a wall below
-                            if map[y + 1][x] != '.' {
-                                wall_char = '┐';
-                            } else {
-                                wall_char = '└';
-                            }
-                            // else if there is a wall below
-                        } else if map[y + 1][x] != '.' {
-                            wall_char = '┘';
-                        } else {
-                            wall_char = '└';
-                        }
-                        // else if top right
-                    }
-                    if x == map[y].len() - 1 && y == 0 {
-                        // if there is a wall to the left
-                        if map[y][x - 1] != '.' {
-                            // if there is also a wall below
-                            if map[y + 1][x] != '.' {
-                                wall_char = '┌';
-                            } else {
-                                wall_char = '┘';
-                            }
-                            // else if there is a wall below
-                        } else if map[y + 1][x] != '.' {
-                            wall_char = '└';
-                        } else {
-                            wall_char = '┘';
-                        }
-                        // else if bottom left
-                    }
-                    if x == 0 && y == map.len() - 1 {
-                        // if there is a wall to the right
-                        if map[y][x + 1] != '.' {
-                            // if there is also a wall above
-                            if map[y - 1][x] != '.' {
-                                wall_char = '┘';
-                            } else {
-                                wall_char = '┌';
-                            }
-                            // else if there is a wall above
-                        } else if map[y - 1][x] != '.' {
-                            wall_char = '┐';
-                        } else {
-                            wall_char = '┌';
-                        }
-                        // else if bottom right
-                    }
-                    if x == map[y].len() - 1 && y == map.len() - 1 {
-                        // if there is a wall to the left
-                        if map[y][x - 1] != '.' {
-                            // if there is also a wall above
-                            if map[y - 1][x] != '.' {
-                                wall_char = '└';
-                            } else {
-                                wall_char = '┐';
-                            }
-                            // else if there is a wall above
-                        } else if map[y - 1][x] != '.' {
-                            wall_char = '┌';
-                        } else {
-                            wall_char = '┐';
-                        }
-                    }
-                }
-                map[y][x] = wall_char;
-            }
-        }
-    }
-
-    map
-}
-
-fn base_map_to_tile_map(map: Vec<Vec<char>>) -> Vec<Vec<u32>> {
-    let mut tile_map = Vec::new();
-    for y in 0..map.len() {
-        let mut row = Vec::new();
-        for x in 0..map[y].len() {
-            let tile = match map[y][x] {
-                '.' => 0,
-                _ => 1, // all walls for now will be the same
-            };
-            row.push(tile);
-        }
-        tile_map.push(row);
-    }
-
-    tile_map
-}
-
 fn gen_dungeon_stress_test_internal(width: u32, height: u32) {
     //let min_room_size = UVec2::new(4, 4);
     //let max_room_size = UVec2::new(16, 16);
@@ -487,7 +528,7 @@ fn gen_dungeon_stress_test_internal(width: u32, height: u32) {
     while i < max {
         let start_time = Instant::now();
 
-        gen_dungeon_internal(width, height);
+        Dungeon::gen_dungeon_base_map(width, height);
 
         let run_time = start_time.elapsed().as_millis();
         run_times.push(run_time.clone());
@@ -541,47 +582,6 @@ fn print_leaf_data(leafs: &Vec<Leaf>) {
     }
 }
 
-fn gen_dungeon_internal(width: u32, height: u32) -> Vec<Vec<char>> {
-    let mut leafs: Vec<Leaf> = Vec::new();
-
-    let root = Leaf::new(0, 0, width, height);
-
-    leafs.push(root.clone());
-
-    let mut did_split = true;
-
-    while did_split {
-        did_split = false;
-
-        let mut new_leafs: Vec<Leaf> = Vec::new();
-
-        for leaf in leafs.iter_mut() {
-            if leaf.left_child.is_none() && leaf.right_child.is_none() {
-                if leaf.width > MAX_LEAF_SIZE
-                    || leaf.height > MAX_LEAF_SIZE
-                    || rand::random::<i32>() % 100 > 25
-                {
-                    if leaf.split() {
-                        did_split = true;
-                        new_leafs.push(*leaf.left_child.as_ref().unwrap().clone());
-                        new_leafs.push(*leaf.right_child.as_ref().unwrap().clone());
-                    }
-                }
-            }
-        }
-
-        // add new leafs to leafs
-        leafs.append(&mut new_leafs);
-    }
-
-    // create rooms
-    for leaf in leafs.iter_mut() {
-        leaf.create_rooms();
-    }
-
-    draw_map(&leafs, root.width, root.height)
-}
-
 //pub fn gen_dungeon(width: u32, height: u32) {
 pub fn gen_dungeon_system(
     mut commands: Commands,
@@ -615,9 +615,9 @@ pub fn gen_dungeon_system(
         )
         .insert(LoadingText);
 
-    let mut base_map = gen_dungeon_internal(dungeon.width, dungeon.height);
-    format_map(base_map.clone()).clone_into(&mut base_map);
-    dungeon.tile_map = base_map_to_tile_map(base_map);
+    let mut base_map = Dungeon::gen_dungeon_base_map(dungeon.width, dungeon.height);
+    Dungeon::format_map(base_map.clone()).clone_into(&mut base_map);
+    dungeon.base_map_to_tile_map(base_map.clone());
 
     // deallocate leafs
     //leafs.clear();
